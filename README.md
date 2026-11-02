@@ -1,14 +1,13 @@
 # A Restate application on Modal
 
 A Restate application using SQLite running on [Modal](https://modal.com), connected to
-[Restate Cloud](https://cloud.restate.dev). It serves a tutorial: a wallet per user, from
-a SQL database per key to agents, one idea per lesson.
+[Restate Cloud](https://cloud.restate.dev). A tutorial comes with it, off by default (see
+[The tutorial](#the-tutorial)).
 
 ## Before you start
 
 Get the connect key of your Restate Cloud environment from
 [**Configure SDK -> Create connect key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
-Lessons 09 to 16 ask OpenAI's models, so get an OpenAI API key too.
 
 ## Run it locally
 
@@ -16,17 +15,17 @@ With Node 24 or later and pnpm:
 
 ```sh
 pnpm install
-RESTATE_CONNECT_KEY=… OPENAI_API_KEY=… node src/app.ts
+RESTATE_CONNECT_KEY=… node src/app.ts
 ```
 
-Then, once, [register `connect://tutorial-v1`](https://cloud.restate.dev/to/overview?register-deployment=connect://tutorial-v1)
+Then, once, [register `connect://wallet-v1`](https://cloud.restate.dev/to/overview?register-deployment=connect://wallet-v1)
 in the Cloud UI (the application prints this link too), or with the CLI:
 
 ```sh
-npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://tutorial-v1
+npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://wallet-v1
 ```
 
-Send requests from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet01).
+Send requests from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet).
 
 To use a Restate server on your machine instead of Cloud, swap `restate.connect` for
 `restate.serve` in [`src/app.ts`](src/app.ts): its comment shows both.
@@ -38,11 +37,11 @@ one container, with your keys from a Modal secret:
 
 ```sh
 pip install modal python-dotenv && modal setup
-modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY} OPENAI_API_KEY=${OPENAI_API_KEY}
+modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY}
 modal deploy modal/on_modal.py
 ```
 
-Register `connect://tutorial-v1` as above, and send requests the same way.
+Register `connect://wallet-v1` as above, and send requests the same way.
 `modal app logs restate-template` follows it.
 
 ## The tutorial
@@ -50,8 +49,21 @@ Register `connect://tutorial-v1` as above, and send requests the same way.
 Each lesson in [`src/tutorial`](src/tutorial) is one file: the wallet so far, plus one new
 idea, explained in the comment at its top with the requests to try it.
 [`src/tutorial/index.ts`](src/tutorial/index.ts) collects them all into one array,
-`tutorial`, which `src/app.ts` serves. Every lesson's objects carry its number
-(`wallet01`, `wallet02`, …), so they live side by side in one deployment.
+`tutorial`. Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so
+they live side by side in one deployment, next to the wallet.
+
+The tutorial is off by default. To try it, include it in [`src/app.ts`](src/app.ts), as
+the comment at its bottom shows:
+
+```ts
+import { tutorial } from './tutorial/index.ts';
+
+const services = [wallet, ...tutorial];
+```
+
+Lessons 09 to 16 ask OpenAI's models, so add `OPENAI_API_KEY` too: to your environment
+locally, and on Modal to the secret (`modal secret create restate-template
+RESTATE_CONNECT_KEY=… OPENAI_API_KEY=… --force`).
 
 | Lesson                                                    | You learn                                                     |
 | --------------------------------------------------------- | ------------------------------------------------------------- |
@@ -91,8 +103,8 @@ Then send requests using `@restatedev/restate-sdk-clients`:
 import * as clients from '@restatedev/restate-sdk-clients';
 
 const rs = clients.connect();
-const alice = rs.objectClient({ name: 'wallet01' }, 'alice');
-console.log(await alice.hello()); // "Hello, alice!"
+const alice = rs.objectClient({ name: 'wallet' }, 'alice');
+console.log(await alice.deposit(10)); // 10, then 20 the next time
 ```
 
 ## Development

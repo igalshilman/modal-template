@@ -1,30 +1,38 @@
 /**
- * The application: the services it serves, and how it reaches Restate.
+ * A database per key
  *
- * It serves the tutorial (src/tutorial): sixteen lessons, from a SQL
- * database per key to agents. Add your own services next to it, or replace
- * it with them. Lessons 09 to 16 ask OpenAI's models, so set
- * `OPENAI_API_KEY` too.
+ * Each key of a session object has its own SQLite database, `ctx.db`. It is
+ * stored in Restate together with the object's state, so there is no
+ * database server to run. `schema` lists the statements that create the
+ * tables; they run once per key, the first time that key is used.
  *
- * Restate Cloud (as is, and on Modal): the app connects out to your Cloud
- * environment, so it needs no open port, only RESTATE_CONNECT_KEY (Cloud UI ->
- * Configure SDK -> Create connect key):
- *
- *   RESTATE_CONNECT_KEY=… OPENAI_API_KEY=… node src/app.ts
- *   npx @restatedev/restate deployments register connect://tutorial-v1    # once; the app prints this too
- *
- * A Restate server on this machine: swap the `connect` line below for the
- * `serve` line, and Restate calls the app on port 9080:
- *
- *   OPENAI_API_KEY=… node src/app.ts
- *   npx @restatedev/restate-server                                                  # in another terminal
- *   npx @restatedev/restate -y deployments register --force http://localhost:9080   # once, and after each change
- *   curl localhost:8080/wallet01/alice/hello                                        # "Hello, alice!"
+ * The wallet records each deposit as a row, and the balance is their sum.
+ * Bob's wallet is another key, so it has a database of its own.
  */
 import * as restate from '@restatedev/sessions';
-import { tutorial } from './tutorial/index.ts';
 
-const services = [...tutorial];
+const wallet = restate.sessionObject({
+  name: 'wallet',
+  schema: ['CREATE TABLE entries (amount INTEGER NOT NULL)'],
+  handlers: {
+    deposit: async (ctx, amount: number) => {
+      await ctx.db.execute('INSERT INTO entries (amount) VALUES (?)', [amount]);
+      // `get` returns the first row as an object, with a property per column.
+      const row = await ctx.db.get<{ balance: number }>('SELECT sum(amount) AS balance FROM entries');
+      return row?.balance;
+    },
+  },
+});
 
-restate.connect({ services, name: 'tutorial-v1' });
+const services = [wallet];
+
+restate.connect({ services, name: 'wallet-v1' });
+// To run locally, with a Restate server on this machine, use this instead:
 // await restate.serve({ services, port: 9080 });
+
+// The tutorial (src/tutorial) is off by default: sixteen lessons, from a SQL
+// database per key to agents. To try it, serve its lessons next to the wallet
+// (lessons 09 to 16 also need OPENAI_API_KEY):
+//
+//   import { tutorial } from './tutorial/index.ts';   // at the top
+//   const services = [wallet, ...tutorial];

@@ -5,7 +5,8 @@
  *
  * Every lesson's objects carry its number (`wallet01` … `wallet16`,
  * `handle07`, `coach15`, …), so they can all be served by one deployment:
- * `tutorial` is all of them, in order. src/app.ts shows how to serve it.
+ * `tutorial` is all of them, in order. It is off by default: the comment at
+ * the bottom of src/app.ts shows how to include it.
  *
  * Lessons 09 to 16 ask OpenAI's models, with your key in `OPENAI_API_KEY`.
  */
