@@ -28,14 +28,17 @@ node --env-file=restate.env src/01_object.ts   # connects to Restate Cloud
 ```
 
 Then, once, tell Restate Cloud about the deployment, named `template` in
-`on_modal.py` (the lesson prints this too):
+`on_modal.py`: [register `connect://template`](https://cloud.restate.dev/to/overview?register-deployment=connect://template)
+in the Cloud UI (the lesson prints this link too), or with the CLI:
 
 ```sh
 npx @restatedev/restate deployments register connect://template
 ```
 
-Now call the wallet through your environment's ingress: from the Cloud UI's
-playground, or from code with the ingress key in `RESTATE_INGRESS_KEY`:
+Now send a request: [open the wallet's `hello` handler in the Cloud UI's playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello),
+with `alice` as the key, and it answers "Hello, alice!". Every handler of
+every lesson is there, with its input. From code, with the ingress key in
+`RESTATE_INGRESS_KEY`:
 
 ```ts
 import * as clients from '@restatedev/restate-sdk-clients';
