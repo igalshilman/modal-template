@@ -61,8 +61,12 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
 
 - `src/app.ts` is the application: its services go in `services`, which
   `restate.connect({ services, name: 'notes-v1' })` connects to Restate Cloud. For a Restate
-  server on this machine, the commented `restate.serve({ services, port: 9080 })` line
-  replaces it.
+  server on this machine, the commented `await restate.serve(...services)` line replaces it
+  (on `PORT`, 9080 by default).
+- `restate.serve` of `@restatedev/sessions` takes the services as arguments,
+  `restate.serve(notes, orders)`, and adds what they need (an agent's `signals`). It is not the
+  SDK's `restate.serve({ services: [...] })`, which the journaled references show: in this
+  repository, `restate` is `@restatedev/sessions`.
 - `src/tutorial/`: the tutorial, one idea per lesson, off by default (see the comment in
   `src/app.ts`). Lessons 01–08 are session objects, 09–16 agents. Read the closest lesson
   before writing similar code. If `src/examples/` exists, it has agents, one per file.
@@ -79,24 +83,24 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
 
 ## Step 3: load what the task needs
 
-| Task                                                                                                               | Reference                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Choose a service type, or how to combine them                                                                      | [choosing-service-types.md](references/choosing-service-types.md)                                                    |
-| Write or change a session object, its views, calls                                                                 | [session-objects.md](references/session-objects.md)                                                                  |
-| Write SQL, tables, schema steps or transactions in a session object or agent                                       | [session-sql.md](references/session-sql.md)                                                                          |
-| Write or change an agent (tools, signals, models, subagents, structured answers)                                   | [restate-agents.md](references/restate-agents.md)                                                                    |
-| A framework's options and behaviour (pi, OpenCode, LangGraph, Claude, DeepSeek): coding agents, `withPi`, steering | [agents-frameworks.md](references/agents-frameworks.md)                                                              |
-| Call, follow (UI), stop, steer or clear an agent; its failures and retries; testing and deploying agents           | [agents-operations.md](references/agents-operations.md)                                                              |
-| Write or change a journaled service, object or workflow                                                            | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                          |
-| Concurrent routines with several durable steps each, in journaled code (`@restatedev/restate-sdk-gen`)             | [ts/durable-coroutines.md](references/ts/durable-coroutines.md)                                                      |
-| Design an application, choose service types and keys                                                               | [design-and-architecture.md](references/design-and-architecture.md)                                                  |
-| Concurrency limits, tenant fairness, scopes, limit keys                                                            | [flow-control-and-scopes.md](references/flow-control-and-scopes.md)                                                  |
-| Invoke, cancel, attach, deduplicate with idempotency keys, send, Kafka                                             | [invocation-lifecycle.md](references/invocation-lifecycle.md)                                                        |
-| Migrate from another orchestrator or architecture                                                                  | [translate-to-restate.md](references/translate-to-restate.md)                                                        |
-| Debug stuck invocations, journal mismatches (journaled handlers)                                                   | [debug-applications.md](references/debug-applications.md)                                                            |
-| A hand-written agent in journaled handlers, or the Vercel AI SDK                                                   | [ai-agents.md](references/ai-agents.md), [ts/restate-vercel-ai-agents.md](references/ts/restate-vercel-ai-agents.md) |
-| Everything about sessions or agents not covered above                                                              | `node_modules/@restatedev/sessions/README.md`, `node_modules/@restatedev/agents/README.md`                           |
-| Server configuration, deployment, advanced topics                                                                  | https://docs.restate.dev (or the `restate-docs` MCP server at https://docs.restate.dev/mcp, if configured)           |
+| Task                                                                                                     | Reference                                                                                                            |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Choose a service type, or how to combine them                                                            | [choosing-service-types.md](references/choosing-service-types.md)                                                    |
+| Write or change a session object, its views, calls                                                       | [session-objects.md](references/session-objects.md)                                                                  |
+| Write SQL, tables, schema steps or transactions in a session object or agent                             | [session-sql.md](references/session-sql.md)                                                                          |
+| Write or change an agent (tools, signals, models, subagents, structured answers)                         | [restate-agents.md](references/restate-agents.md)                                                                    |
+| A framework's options and behaviour (pi, OpenCode, LangGraph, Claude, DeepSeek): coding agents, `withPi` | [agents-frameworks.md](references/agents-frameworks.md)                                                              |
+| Call, follow (UI), stop or clear an agent; turns; its failures and retries; testing and deploying agents | [agents-operations.md](references/agents-operations.md)                                                              |
+| Write or change a journaled service, object or workflow                                                  | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                          |
+| Concurrent routines with several durable steps each, in journaled code (`@restatedev/restate-sdk-gen`)   | [ts/durable-coroutines.md](references/ts/durable-coroutines.md)                                                      |
+| Design an application, choose service types and keys                                                     | [design-and-architecture.md](references/design-and-architecture.md)                                                  |
+| Concurrency limits, tenant fairness, scopes, limit keys                                                  | [flow-control-and-scopes.md](references/flow-control-and-scopes.md)                                                  |
+| Invoke, cancel, attach, deduplicate with idempotency keys, send, Kafka                                   | [invocation-lifecycle.md](references/invocation-lifecycle.md)                                                        |
+| Migrate from another orchestrator or architecture                                                        | [translate-to-restate.md](references/translate-to-restate.md)                                                        |
+| Debug stuck invocations, journal mismatches (journaled handlers)                                         | [debug-applications.md](references/debug-applications.md)                                                            |
+| A hand-written agent in journaled handlers, or the Vercel AI SDK                                         | [ai-agents.md](references/ai-agents.md), [ts/restate-vercel-ai-agents.md](references/ts/restate-vercel-ai-agents.md) |
+| Everything about sessions or agents not covered above                                                    | `node_modules/@restatedev/sessions/README.md`, `node_modules/@restatedev/agents/README.md`                           |
+| Server configuration, deployment, advanced topics                                                        | https://docs.restate.dev (or the `restate-docs` MCP server at https://docs.restate.dev/mcp, if configured)           |
 
 The journaled references come from [restatedev/skills](https://github.com/restatedev/skills)
 (MIT, see `references/LICENSE-restatedev-skills.md`), with a scope note at their top. Where

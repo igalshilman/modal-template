@@ -12,11 +12,11 @@ description: >
 
 The app is `src/app.ts`. It runs in one of three ways, chosen by its last lines:
 
-| Where                                          | `src/app.ts` uses                                 | Who calls whom                             |
-| ---------------------------------------------- | ------------------------------------------------- | ------------------------------------------ |
-| A Restate server on this machine (development) | `await restate.serve({ services, port: 9080 })`   | Restate calls the app on port 9080         |
-| This machine, against Restate Cloud            | `restate.connect({ services, name: 'notes-v1' })` | The app connects out to Restate Cloud      |
-| Modal, against Restate Cloud                   | `restate.connect(...)`, as committed              | One always-on Modal container connects out |
+| Where                                          | `src/app.ts` uses                                               | Who calls whom                             |
+| ---------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |
+| A Restate server on this machine (development) | `await restate.serve(...services)`, on `PORT` (9080 by default) | Restate calls the app on port 9080         |
+| This machine, against Restate Cloud            | `restate.connect({ services, name: 'notes-v1' })`               | The app connects out to Restate Cloud      |
+| Modal, against Restate Cloud                   | `restate.connect(...)`, as committed                            | One always-on Modal container connects out |
 
 `restate.connect` is what is committed: switch to `restate.serve` only for a local server,
 and switch back before deploying. The app connects to Restate Cloud, rather than Restate

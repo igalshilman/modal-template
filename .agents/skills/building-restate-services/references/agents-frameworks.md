@@ -1,8 +1,9 @@
 # The frameworks of `@restatedev/agents`
 
 Every framework's agent has the same shape: `agent({ name, model, system, tools, output, ... })`,
-with the handler `chat` and the views `messages`, `status`, `stop`, `steer`, `clear`, `sync`,
-`notifications`, `watch`, `pending`, `signal`. For a session object of your own, each has `<framework>.chat(options)`
+with the handler `chat` and the views `messages`, `status`, `stop`, `clear`, `sync`,
+`notifications`, `watch`, `pending`, `signal`. No framework takes a message mid-turn: a message
+sent while the agent works waits for its own turn. For a session object of your own, each has `<framework>.chat(options)`
 (the handler), `<framework>.messages()` (the view) and `<framework>.prompt(ctx, text,
 options)`. `options` may be a function of the context. The general rules are in
 [restate-agents.md](restate-agents.md); this page is what differs. The full READMEs:
@@ -16,7 +17,6 @@ options)`. `options` may be a function of the context. The general rules are in
 | Default model                          | `openai/gpt-6-sol`                                                                 | `openai/gpt-6-sol`                                          | `openai/gpt-6-sol`                                                                         | `anthropic/claude-sonnet-5-5`           | `deepseek/deepseek-flash`                                                       |
 | Coding tools                           | `workspace` (read, write, edit, bash)                                              | `workspace` (read, edit, bash, glob, grep, …)               | Your tools                                                                                 | Your tools (or the SDK's agent toolset) | Your tools                                                                      |
 | Tool call cut off by a crash           | Runs again, same `callId` (its own coding tools: not run again, the model is told) | New call, new `callId` (use `retryOf`)                      | Runs again, same `callId`                                                                  | Runs again, same `callId`               | New call, new `callId` (use `retryOf`)                                          |
-| Steering (`steer`) mid-turn            | Yes                                                                                | Yes                                                         | No: answered after the turn                                                                | No: answered after the turn             | Yes                                                                             |
 | Beyond a prompt                        | `withPi(ctx, options, work)`                                                       | `withOpenCode(ctx, options, work)`                          | `new SqlCheckpointSaver(db)` for a graph of your own                                       |                                         |                                                                                 |
 | Packages (exact versions where pinned) | `@earendil-works/pi-durable`, `pi-ai`, `chord`                                     | `@opencode/{core,plugin,sdk,server}@2.0.32`, `effect@4.0.1` | `@langchain/core`, `langgraph`, `langgraph-checkpoint`, `@langchain/openai` or `anthropic` | `@anthropic-ai/sdk`                     | `@deepseek-ai/cordis`, `@deepseek-ai/dsh-*@0.2.1-rc.2`, `@earendil-works/pi-ai` |
 

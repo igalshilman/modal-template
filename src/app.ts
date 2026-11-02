@@ -32,4 +32,4 @@ const services = [notes];
 
 restate.connect({ services, name: 'notes-v1' });
 // To run locally, with a Restate server on this machine, use this instead:
-// await restate.serve({ services, port: 9080 });
+// await restate.serve(...services); // on PORT, 9080 by default

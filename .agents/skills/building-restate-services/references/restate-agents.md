@@ -15,7 +15,7 @@ is stored in the database step by step, and a retried attempt resumes from it.
 
 More in this skill: [agents-frameworks.md](agents-frameworks.md) (each framework's options,
 crash behaviour and API) and [agents-operations.md](agents-operations.md) (calling and
-following an agent, stopping and steering, failures, testing, deploying). The package's own
+following an agent, turns and stopping, failures, testing, deploying). The package's own
 documentation: `node_modules/@restatedev/agents/README.md`, and per framework
 `node_modules/@restatedev/agents/src/{pi,opencode,langgraph,claude,deepseek}/README.md`.
 Its source is in `node_modules/@restatedev/agents/src/`, readable TypeScript.
@@ -41,15 +41,17 @@ Each key (`assistant/alice`) is a conversation with its own database, answering 
 at a time, in the order they came.
 
 **Serving it.** In this repository, add it to `services` in `src/app.ts`, **together with
-`signals`**, the object every agent uses for its waits, steering and status:
+`signals`**, the object every agent uses for its waits and status (its companion):
 
 ```ts
 const services = [notes, assistant, signals];
 ```
 
-`signals` belongs in the list once, however many agents you serve. (`serve(...)` of
-`@restatedev/agents` adds it by itself, but this repository serves with
-`restate.connect` / `restate.serve`.)
+`signals` belongs in the list once, however many agents you serve. **`restate.connect`**, what
+this repository commits, serves exactly the services it is given, so `signals` must be there.
+`restate.serve(...services)` of `@restatedev/sessions` (and `serve` of `@restatedev/agents`,
+the same function) adds what each agent needs by itself, each once: with it, listing
+`signals` is harmless.
 
 ## Choose a framework
 
@@ -68,11 +70,11 @@ packages are missing fails as it is imported, naming the first it lacks.
 Every framework's `agent()` takes `name`, `model`, `system`, `tools` and `output`; pi and
 OpenCode take a `workspace` too. Every agent also takes:
 
-| Option        | What                                                                                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| `description` | What it is, for the UI, and for a parent's model when it is a `subagent`                              |
-| `background`  | It works unwatched (a subagent): followers see each turn once it ended, and a steer waits for the end |
-| `schema`      | Tables of your own in its database (never named `restate_…`)                                          |
+| Option        | What                                                                     |
+| ------------- | ------------------------------------------------------------------------ |
+| `description` | What it is, for the UI, and for a parent's model when it is a `subagent` |
+| `background`  | It works unwatched (a subagent): followers see each turn once it ended   |
+| `schema`      | Tables of your own in its database (never named `restate_…`)             |
 
 `system` is the whole system prompt for Claude and LangGraph, and is added to the
 framework's own (which describes its tools) for pi, OpenCode and DeepSeek.
@@ -232,7 +234,7 @@ const memory = sessionObject({
 ```
 
 - **Reserved names:** your handlers and views can't be named `signal`, `pending`, `status`,
-  `stop`, `steer`, `notifications`, `watch`, `sync`, `clear` or `erase`. Defining one throws.
+  `stop`, `notifications`, `watch`, `sync`, `clear` or `erase`. Defining one throws.
 - `chat` takes options, or a function of the context giving them (each user's model and
   persona from `ctx.db`): `pi.chat(async (ctx) => ({ model: await modelOf(ctx) }))`.
 - `prompt(ctx, text, options)` asks a model from any handler, once however often the handler
@@ -250,9 +252,11 @@ const memory = sessionObject({
 at `/<name>/webhook` that checks each delivery's HMAC-SHA256 signature (`auth: { header,
 secret }`; 401 otherwise) and delivers it to the agents of `route`, keyed by `key(body)`
 (`undefined` drops it). A delivery sent again (same idempotency header) reaches the same
-message. The agent reads it as `<webhook name="…" delivery="…">{json}</webhook>`: as a steer
-of the turn it answers, if any, else as a message of its own. From any handler, for events of
-other kinds (a queue, a schedule): `deliver(ctx, agent, key, text, { idempotencyKey })`.
+message. A delivery is a message of its own to the agent's `chat`, which reads it as
+`<webhook name="…" delivery="…">{json}</webhook>`, and answers it after the message it works
+on, if any, even a stopped one: a delivery is never dropped. From any handler, for events of
+other kinds (a queue, a schedule): `deliver(ctx, agent, key, text, { idempotencyKey })`, a
+message of the same kind.
 
 ## Before finishing (agents)
 
