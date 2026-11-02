@@ -32,7 +32,8 @@ image = (
     .run_commands("corepack enable")  # pnpm, the version package.json pins
     .add_local_file(HERE / "package.json", "/app/package.json", copy=True)
     .add_local_file(HERE / "pnpm-workspace.yaml", "/app/pnpm-workspace.yaml", copy=True)
-    .run_commands("pnpm install --prod")
+    .add_local_file(HERE / "pnpm-lock.yaml", "/app/pnpm-lock.yaml", copy=True)
+    .run_commands("pnpm install --prod --frozen-lockfile")
     .add_local_dir(HERE / "src", "/app/src")  # mounted, not built in: a changed lesson redeploys in seconds
 )
 
