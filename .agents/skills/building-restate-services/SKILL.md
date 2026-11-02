@@ -1,0 +1,115 @@
+---
+name: building-restate-services
+description: >
+  Design, build, run and test Restate services in TypeScript in this repository: session
+  objects with a SQL database per key (@restatedev/sessions), durable AI agents on them
+  (@restatedev/agents: pi, OpenCode, LangGraph, Claude, DeepSeek), and journaled Restate
+  services, virtual objects and workflows (@restatedev/restate-sdk). Use when the user
+  mentions Restate, session objects, sessionObject, ctx.db, durable agents, virtual objects,
+  workflows, durable execution, or edits src/app.ts, src/tutorial or src/examples.
+---
+
+# Restate in this repository
+
+Restate is a durable execution runtime: services run behind a Restate Server (ingress on
+port 8080, admin and UI on 9070), which retries them through crashes. This repository uses
+**two execution models side by side**, and their rules contradict each other. **Before
+writing or changing a handler, decide which model it uses, and follow only that model's
+rules.**
+
+## Step 1: which model is this handler?
+
+|                                      | **Session object**                                                                                                                                                                                               | **Journaled handler**                                                                                                                              |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Defined with                         | `restate.sessionObject(...)` of `@restatedev/sessions`; `sessionObject(...)`, `pi.agent(...)`, `opencode.agent(...)`, `langgraph.agent(...)`, `claude.agent(...)`, `deepseek.agent(...)` of `@restatedev/agents` | `restate.service(...)`, `restate.object(...)`, `restate.workflow(...)` (whether imported from `@restatedev/restate-sdk` or `@restatedev/sessions`) |
+| After a failure                      | Runs again **from its first line**, against its database. No journal replay                                                                                                                                      | **Replays its journal**: completed steps return their recorded results                                                                             |
+| State                                | `ctx.db`: a SQL database per key                                                                                                                                                                                 | `ctx.get` / `ctx.set` key/value state                                                                                                              |
+| Side effects                         | Directly; make them safe to run twice (stable ids, idempotency keys)                                                                                                                                             | Inside `ctx.run(...)`                                                                                                                              |
+| Concurrency                          | Native `Promise.all` / `Promise.race` are fine                                                                                                                                                                   | `RestatePromise.all/race/any`, never native combinators                                                                                            |
+| Time, random, ids                    | Allowed, but never as idempotency ids                                                                                                                                                                            | Only `ctx.date`, `ctx.rand`                                                                                                                        |
+| Timers, awakeables, durable promises | Not available: call a journaled handler for them                                                                                                                                                                 | `ctx.sleep`, `ctx.awakeable`, `ctx.promise`                                                                                                        |
+| Calls                                | `ctx.rpc(target, key?, { idempotencyKey })`, `ctx.send(...)`, `tx.send(...)`                                                                                                                                     | `ctx.serviceClient`, `ctx.objectClient`, `ctx.workflowClient` and their send clients                                                               |
+| Testing rule                         | Show that a handler run twice does its work once                                                                                                                                                                 | Always-replay Testcontainers test                                                                                                                  |
+| Reference                            | [session-objects.md](references/session-objects.md), and [restate-agents.md](references/restate-agents.md) for agents                                                                                            | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                                                        |
+
+**For new code, choose:**
+
+- **Session object**: an entity with state per key that SQL suits (notes, a wallet, a
+  ledger), or a conversation. **Any AI agent in this repository**: use `@restatedev/agents`,
+  not a hand-written agent loop.
+- **Journaled handler**: timers and long sleeps, awakeables, durable promises, an
+  exactly-once multi-step process (a refund, an onboarding), or a sequence of side effects
+  that each must happen once (`ctx.run`). A session object can call it with `ctx.rpc`.
+- Both kinds live in one deployment and call each other. A file can hold both: decide per
+  handler, never per file.
+
+Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object has no
+`ctx.run`), and don't use native `Promise.all` in a journaled handler.
+
+## Step 2: the repository
+
+- `src/app.ts` is the application: its services go in `services`, which
+  `restate.connect({ services, name: 'notes-v1' })` connects to Restate Cloud. For a Restate
+  server on this machine, the commented `restate.serve({ services, port: 9080 })` line
+  replaces it.
+- `src/tutorial/`: the tutorial, one idea per lesson, off by default (see the comment in
+  `src/app.ts`). Lessons 01–08 are session objects, 09–16 agents. Read the closest lesson
+  before writing similar code. If `src/examples/` exists, it has agents, one per file.
+- Import the SDK from `@restatedev/sessions` (it re-exports `@restatedev/restate-sdk` at the
+  version it pins). Don't add another `@restatedev/restate-sdk` version.
+- Node 24 runs the TypeScript directly: `node src/app.ts`. Check with `pnpm lint` (tsc,
+  oxlint, oxfmt) and format with `pnpm format`.
+- To run it locally, connect it to Restate Cloud, or deploy it on Modal: the
+  **deploying-on-modal** skill.
+
+## Step 3: load what the task needs
+
+| Task                                                                                                   | Reference                                                                                                            |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Write or change a session object, its schema, transactions, views, calls                               | [session-objects.md](references/session-objects.md)                                                                  |
+| Write or change an agent (tools, signals, models, subagents, structured answers)                       | [restate-agents.md](references/restate-agents.md)                                                                    |
+| Write or change a journaled service, object or workflow                                                | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                          |
+| Concurrent routines with several durable steps each, in journaled code (`@restatedev/restate-sdk-gen`) | [ts/durable-coroutines.md](references/ts/durable-coroutines.md)                                                      |
+| Design an application, choose service types and keys                                                   | [design-and-architecture.md](references/design-and-architecture.md)                                                  |
+| Concurrency limits, tenant fairness, scopes, limit keys                                                | [flow-control-and-scopes.md](references/flow-control-and-scopes.md)                                                  |
+| Invoke, cancel, attach, deduplicate with idempotency keys, send, Kafka                                 | [invocation-lifecycle.md](references/invocation-lifecycle.md)                                                        |
+| Migrate from another orchestrator or architecture                                                      | [translate-to-restate.md](references/translate-to-restate.md)                                                        |
+| Debug stuck invocations, journal mismatches (journaled handlers)                                       | [debug-applications.md](references/debug-applications.md)                                                            |
+| A hand-written agent in journaled handlers, or the Vercel AI SDK                                       | [ai-agents.md](references/ai-agents.md), [ts/restate-vercel-ai-agents.md](references/ts/restate-vercel-ai-agents.md) |
+| Everything about sessions or agents not covered above                                                  | `node_modules/@restatedev/sessions/README.md`, `node_modules/@restatedev/agents/README.md`                           |
+| Server configuration, deployment, advanced topics                                                      | https://docs.restate.dev (or the `restate-docs` MCP server at https://docs.restate.dev/mcp, if configured)           |
+
+The journaled references come from [restatedev/skills](https://github.com/restatedev/skills)
+(MIT, see `references/LICENSE-restatedev-skills.md`), with a scope note at their top. Where
+they say "the bundled MCP server", use https://docs.restate.dev if no MCP server is set up.
+
+## Restate CLI
+
+Operate a running Restate Server with the CLI (`npx @restatedev/restate@1.8.1 …`, or
+`restate` if installed): register deployments, inspect and manage invocations, read state,
+query the server with SQL. It describes itself, so ask it instead of guessing:
+
+- `restate --help`, `restate <command> --help`, and `restate search <what you want to do>`.
+- `restate sql --help` lists the introspection tables; `restate sql describe <table>`.
+- Always pass `--json`. A command that changes something (register, cancel, kill, purge,
+  state edits) prints its plan with `"applied": false` and exits with code 3: show the plan
+  to the user, and only then run it again with `--yes`.
+- `restate whoami --json` says which server it talks to (by default `localhost:9070`).
+
+## Before finishing
+
+Run the checklist of each model you touched:
+
+- Session objects and agents: the checklists at the end of
+  [session-objects.md](references/session-objects.md) and
+  [restate-agents.md](references/restate-agents.md).
+- Journaled handlers:
+  - [ ] Side effects, external I/O and database calls inside `ctx.run`; no Restate context
+        operation inside a `ctx.run` callback
+  - [ ] No native random, time, sleep or UUIDs: `ctx.rand`, `ctx.date`, `ctx.sleep`
+  - [ ] `RestatePromise` combinators, not native `Promise` ones
+  - [ ] `TerminalError` for failures that must not be retried
+  - [ ] No deadlock cycles between virtual objects calling each other
+  - [ ] Logic changes covered by an always-replay test (see `ts/api-and-pitfalls.md`)
+- Always: `pnpm lint` passes, the service is in `services` in `src/app.ts`, and it was
+  called through Restate (curl, the playground, or the UI).

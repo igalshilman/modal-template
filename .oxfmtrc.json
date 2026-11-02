@@ -2,5 +2,19 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 120,
   "singleQuote": true,
-  "ignorePatterns": ["**/node_modules", "**/.venv", "**/target", "**/dist", "**/pnpm-lock.yaml"]
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/.venv",
+    "**/target",
+    "**/dist",
+    "**/pnpm-lock.yaml",
+    ".agents/skills/building-restate-services/references/ai-agents.md",
+    ".agents/skills/building-restate-services/references/debug-applications.md",
+    ".agents/skills/building-restate-services/references/design-and-architecture.md",
+    ".agents/skills/building-restate-services/references/flow-control-and-scopes.md",
+    ".agents/skills/building-restate-services/references/invocation-lifecycle.md",
+    ".agents/skills/building-restate-services/references/translate-to-restate.md",
+    ".agents/skills/building-restate-services/references/LICENSE-restatedev-skills.md",
+    ".agents/skills/building-restate-services/references/ts/**"
+  ]
 }
