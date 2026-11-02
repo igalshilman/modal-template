@@ -1,14 +1,15 @@
 """
 The Restate app on Modal, connected to Restate Cloud.
 
-One container runs src/app.ts, which connects out to Restate Cloud with
-`restate.connect` (its last line): Modal exposes no port. Its keys are a
-Modal secret, created once from restate.env (see README.md).
+One container runs src/app.ts (the tutorial, src/tutorial), which connects
+out to Restate Cloud with `restate.connect`: Modal exposes no port. Its keys
+(RESTATE_CONNECT_KEY, and OPENAI_API_KEY for the agent lessons) are a Modal
+secret, created once from restate.env (see README.md).
 
     pip install modal python-dotenv && modal setup                          # once
     modal secret create restate-template --from-dotenv restate.env          # once
     modal deploy modal/on_modal.py                                          # the image builds on Modal, then the app runs
-    restate deployments register connect://wallet-v1                        # once: tells Restate Cloud about the deployment
+    restate deployments register connect://tutorial-v1                      # once: tells Restate Cloud about the deployment
 
 `modal app logs restate-template` follows the app; `modal app stop
 restate-template` stops it.
