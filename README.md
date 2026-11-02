@@ -1,15 +1,12 @@
 # A Restate application on Modal
 
-A Restate application running on [Modal](https://modal.com), connected to
-[Restate Cloud](https://cloud.restate.dev). The application connects *out*
-with `restate.connect`, so Modal exposes no port and no URL: one container,
-always up, that Restate Cloud reaches over that connection.
+A Restate application using SQLite running on [Modal](https://modal.com), connected to
+[Restate Cloud](https://cloud.restate.dev).
 
 ## Before you start
 
-Get the keys of your Restate Cloud environment from
-[**Configure SDK**](https://cloud.restate.dev/to/developers/integration#configure-sdk)
-and save the file here as `restate.env`.
+Get the connect key of your Restate Cloud environment from
+[**Configure SDK -> Create connect key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
 
 ## Run it locally
 
@@ -17,38 +14,38 @@ With Node 24 or later and pnpm:
 
 ```sh
 pnpm install
-node --env-file=restate.env src/01_object.ts
+node src/app.ts
 ```
 
-Then, once, [register `connect://template`](https://cloud.restate.dev/to/overview?register-deployment=connect://template)
+Then, once, [register `connect://wallet-v1`](https://cloud.restate.dev/to/overview?register-deployment=connect://wallet-v1)
 in the Cloud UI (the application prints this link too), or with the CLI:
 
 ```sh
 npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://template
 ```
 
-Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello).
+Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet).
 
 ## Run it on Modal
 
-[`on_modal.py`](on_modal.py) builds the image on Modal and runs one file in
-one container, with your keys from a Modal secret, created once from
-`restate.env`:
+[`modal/on_modal.py`](modal/on_modal.py) builds the image on Modal and runs one file in
+one container, with your keys from a Modal secret:
 
 ```sh
 pip install modal python-dotenv && modal setup                                        # once
-modal secret create restate-template --from-dotenv restate.env OPENAI_API_KEY=sk-…    # once
-modal deploy on_modal.py                                                              # runs src/01_object.ts
-LESSON=15_subagents modal deploy on_modal.py                                          # another file takes its place
+modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY}       # once
+modal deploy modal/on_modal.py                                                        # runs the app
 ```
 
-Register `connect://template` as above, and send requests the same way.
-`modal app logs restate-template` follows it; `modal app stop restate-template`
-stops it.
+Register `connect://wallet-v1` as above, and send requests the same way.
+`modal app logs restate-template` follows it.
 
 ## Using client to send requests
 
-To send requests using the ingress client:
+Get the ingress key of your Restate Cloud environment from
+[**Configure SDK -> Create ingress key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
+
+Then send requests using `@restatedev/restate-sdk-clients`:
 
 ```ts
 import * as clients from '@restatedev/restate-sdk-clients';
@@ -56,18 +53,4 @@ import * as clients from '@restatedev/restate-sdk-clients';
 const rs = clients.connect();
 const alice = rs.objectClient({ name: 'wallet' }, 'alice');
 console.log(await alice.hello()); // "Hello, alice!"
-```
-
-This will use the configured key `RESTATE_INGRESS_KEY` from `restate.env`
-
-To run another file, stop this one, start that, and register again.
-
-Without Restate Cloud, every file ends with the `restate.serve` line to use
-instead of `restate.connect`, commented out, for a Restate on this machine:
-
-```sh
-node src/01_object.ts                                                           # on port 9080
-npx @restatedev/restate-server                                                  # Restate, in another terminal
-npx @restatedev/restate -y deployments register --force http://localhost:9080
-curl localhost:8080/wallet/alice/hello
 ```
