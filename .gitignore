@@ -5,4 +5,4 @@ restate.env
 .env.*
 .DS_Store
 .idea/
-__pycache____pycache__/
+__pycache__/
