@@ -29,6 +29,6 @@ const wallet = restate.sessionObject({
   },
 });
 
-restate.connect({ services: [wallet] });
+restate.connect({ services: [wallet], name: "wallet-v1" });
 // To run locally, with a Restate server on this machine, use this instead:
 // await restate.serve({ services: [wallet], port: 9080 });
