@@ -182,6 +182,12 @@ curl localhost:8080/support/alice/signal --json '{"name": "approval", "value": "
 value is dropped, unless it has `"keep": true`, which keeps it for the next wait of its name.
 A wait ends with its invocation: a stopped turn leaves `pending`.
 
+`signal()` is a tool, so calling it is the model's choice, guided by the descriptions: use it
+as it is for approvals the model should ask for. If an approval is a hard rule (a refund over
+$50 must never happen without one), enforce it in code: put the action in a journaled
+workflow that waits for the approval itself (a durable promise), and give the agent a
+`workflow()` tool for it.
+
 ## Structured answers
 
 With `output`, a zod object, the agent's answer is a checked value, not text:
