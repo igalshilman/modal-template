@@ -72,7 +72,8 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
 
 | Task                                                                                                   | Reference                                                                                                            |
 | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Write or change a session object, its schema, transactions, views, calls                               | [session-objects.md](references/session-objects.md)                                                                  |
+| Write or change a session object, its views, calls                                                     | [session-objects.md](references/session-objects.md)                                                                  |
+| Write SQL, tables, schema steps or transactions in a session object or agent                           | [session-sql.md](references/session-sql.md)                                                                          |
 | Write or change an agent (tools, signals, models, subagents, structured answers)                       | [restate-agents.md](references/restate-agents.md)                                                                    |
 | Write or change a journaled service, object or workflow                                                | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                          |
 | Concurrent routines with several durable steps each, in journaled code (`@restatedev/restate-sdk-gen`) | [ts/durable-coroutines.md](references/ts/durable-coroutines.md)                                                      |

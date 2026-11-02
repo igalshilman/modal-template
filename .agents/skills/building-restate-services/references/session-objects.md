@@ -139,6 +139,9 @@ still running after 16 of the handlers' commits fails, and is retried.
 
 ## The database
 
+The SQL dialect (SQLite, not Postgres), what works and what doesn't, and every transaction
+rule, all tested: [session-sql.md](session-sql.md). Read it before writing SQL.
+
 - `query<T>(sql, params)` returns rows as objects keyed by column name. `get<T>` returns
   the first row or `undefined`. `values` returns rows as arrays. `execute` runs statements
   and returns nothing. `T` isn't checked at runtime.
@@ -213,6 +216,9 @@ and call each other:
       change something carry an idempotency key, related writes in one transaction
 - [ ] Schema changes are new steps appended at the end; no step that may have run was edited
 - [ ] Views only read; writes are in handlers
+- [ ] The SQL is SQLite's, and follows [session-sql.md](session-sql.md): `INTEGER PRIMARY KEY`,
+      no `NOW()`, no `Date` or object parameters, no `COMMIT`/`ROLLBACK` in a transaction body,
+      `transaction()` awaited, no reliance on foreign keys
 - [ ] No `ctx.run`, `ctx.sleep`, `ctx.get/set` or awakeables: those moved to a journaled
       service, object or workflow that the session object calls
 - [ ] The SDK is imported from `@restatedev/sessions`, with no second SDK version added
