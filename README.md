@@ -1,22 +1,21 @@
 # A Restate application on Modal
 
-The [`@restatedev/sessions` tutorial](https://github.com/restatedev/sdk-sessions/tree/main/packages/template),
-a wallet for every user, from a SQL database per key to agents, deployed on
-[Modal](https://modal.com) and connected to [Restate Cloud](https://cloud.restate.dev).
-Each lesson in `src/` is one file that runs on its own; the comment at the top
-explains it and lists the requests to try.
+A Restate application running on [Modal](https://modal.com), connected to
+[Restate Cloud](https://cloud.restate.dev). The application connects *out*
+with `restate.connect`, so Modal exposes no port and no URL: one container,
+always up, that Restate Cloud reaches over that connection.
 
-The lesson connects *out* to Restate Cloud with `restate.connect`, the last
-line of each lesson, so Modal exposes no port and no URL: one container runs
-the lesson, always up, and Restate Cloud reaches it over that connection.
+The application is a wallet for every user, with a SQL database per wallet
+and an agent in it, built step by step: each file in `src/` runs on its own,
+and its top comment lists the requests to try. `01_object.ts` is the
+simplest; from `09_prompt.ts` on it asks OpenAI's models.
 
 ## Before you start
 
-You need the keys of a [Restate Cloud](https://cloud.restate.dev) environment:
+Get the keys of your Restate Cloud environment from
 [Configure SDK](https://cloud.restate.dev/to/developers/integration#configure-sdk)
-downloads them as a file. Save it here as `restate.env` (it is in
-`.gitignore`). Lessons 09 to 16 ask OpenAI's models, with your API key in
-`OPENAI_API_KEY`.
+and save the file here as `restate.env` (it is in `.gitignore`). For the
+agent, add your OpenAI API key to it as `OPENAI_API_KEY`.
 
 ## Run it locally
 
@@ -24,62 +23,54 @@ With Node 24 or later and pnpm:
 
 ```sh
 pnpm install
-node --env-file=restate.env src/01_object.ts   # connects to Restate Cloud
+node --env-file=restate.env src/01_object.ts
 ```
 
-Then, once, tell Restate Cloud about the deployment, named `template` in
-`on_modal.py`: [register `connect://template`](https://cloud.restate.dev/to/overview?register-deployment=connect://template)
-in the Cloud UI (the lesson prints this link too), or with the CLI:
+Then, once, [register `connect://template`](https://cloud.restate.dev/to/overview?register-deployment=connect://template)
+in the Cloud UI (the application prints this link too), or with the CLI:
 
 ```sh
 npx @restatedev/restate deployments register connect://template
 ```
 
-Now send a request: [open the wallet's `hello` handler in the Cloud UI's playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello),
-with `alice` as the key, and it answers "Hello, alice!". Every handler of
-every lesson is there, with its input. From code, with the ingress key in
-`RESTATE_INGRESS_KEY`:
+Send a request from the
+[playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello):
+the wallet's `hello` handler, with `alice` as the key, answers
+"Hello, alice!". Or from code, with the ingress key in `RESTATE_INGRESS_KEY`:
 
 ```ts
 import * as clients from '@restatedev/restate-sdk-clients';
 
-const rs = clients.connect({}); // the environment and the key from RESTATE_INGRESS_KEY
+const rs = clients.connect({});
 const alice = rs.objectClient({ name: 'wallet' }, 'alice');
 console.log(await alice.hello()); // "Hello, alice!"
 ```
 
-The requests to try are at the top of each lesson, as `curl` against a local
-Restate: on Cloud, send the same paths and bodies through the ingress. The
-Cloud UI shows every request and what it did.
+To run another file, stop this one, start that, and register again.
 
-To move on, stop the lesson, start the next one, and register again: the
-wallets you filled in one lesson are still there in the next, just as a real
-application keeps its data across releases.
-
-Without Restate Cloud, every lesson ends with the `restate.serve` line to use
-instead of `restate.connect`, commented out. With it, Restate runs on this
-machine:
+Without Restate Cloud, every file ends with the `restate.serve` line to use
+instead of `restate.connect`, commented out, for a Restate on this machine:
 
 ```sh
-node src/01_object.ts                                                           # the lesson, on port 9080
+node src/01_object.ts                                                           # on port 9080
 npx @restatedev/restate-server                                                  # Restate, in another terminal
-npx @restatedev/restate -y deployments register --force http://localhost:9080   # tell Restate where it is
+npx @restatedev/restate -y deployments register --force http://localhost:9080
 curl localhost:8080/wallet/alice/hello
 ```
 
 ## Run it on Modal
 
-[`on_modal.py`](on_modal.py) builds the image on Modal (`pnpm install`) and
-runs `node src/<lesson>.ts` in one container, with your keys from a Modal
-secret, created once from `restate.env`:
+[`on_modal.py`](on_modal.py) builds the image on Modal and runs one file in
+one container, with your keys from a Modal secret, created once from
+`restate.env`:
 
 ```sh
 pip install modal python-dotenv && modal setup                                        # once
 modal secret create restate-template --from-dotenv restate.env OPENAI_API_KEY=sk-…    # once
-modal deploy on_modal.py                                                              # builds the image, runs lesson 01
-LESSON=15_subagents modal deploy on_modal.py                                          # another lesson takes its place
+modal deploy on_modal.py                                                              # runs src/01_object.ts
+LESSON=15_subagents modal deploy on_modal.py                                          # another file takes its place
 ```
 
-Register the deployment as above, `connect://template`, and call it the same
-way. `modal app logs restate-template` follows the lesson, and
-`modal app stop restate-template` stops it.
+Register `connect://template` as above, and send requests the same way.
+`modal app logs restate-template` follows it; `modal app stop restate-template`
+stops it.
