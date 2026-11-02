@@ -25,14 +25,17 @@ runs `node src/<lesson>.ts` in it.
 You need a [Restate Cloud](https://cloud.restate.dev) environment and a
 [Modal](https://modal.com) account.
 
+In the Cloud UI, Development → Configure SDK, download your environment's
+keys as a file, and save it here as `restate.env` (it is in `.gitignore`).
+Then make it a Modal secret, once, with your OpenAI API key for lessons 09
+to 16:
+
 ```sh
-pip install modal && modal setup                                                       # once
-modal secret create restate-template RESTATE_CONNECT_KEY=rstcloudv1_… OPENAI_API_KEY=sk-…   # once
+pip install modal python-dotenv && modal setup
+modal secret create restate-template --from-dotenv restate.env OPENAI_API_KEY=sk-…
 ```
 
-The secret holds the connect key (Cloud UI → Development → Configure SDK)
-and, for lessons 09 to 16, your OpenAI API key. `on_modal.py` gives it to the
-container.
+`on_modal.py` gives the secret to the container.
 
 ## Run a lesson
 

@@ -1,5 +1,5 @@
 node_modules/
-# Keys, if you keep them in a file: `modal secret create restate-template --from-dotenv restate.env`.
+# Your keys, downloaded from the Cloud UI (see README).
 restate.env
 .env
 .env.*

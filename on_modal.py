@@ -3,14 +3,15 @@ A lesson on Modal, connected to Restate Cloud.
 
 One container runs the lesson, which connects out to Restate Cloud with
 `restate.connect` (the last line of each lesson): Modal exposes no port. Its
-keys are a Modal secret, created once: the connect key from the Cloud UI,
-Development → Configure SDK, and OPENAI_API_KEY for lessons 09 to 16.
+keys are a Modal secret, created once from the environment file the Cloud UI
+gives you (Development → Configure SDK), with OPENAI_API_KEY for lessons 09
+to 16.
 
-    pip install modal && modal setup                                                   # once
-    modal secret create restate-template RESTATE_CONNECT_KEY=rstcloudv1_… OPENAI_API_KEY=sk-…   # once
-    modal deploy on_modal.py                                                           # the image builds on Modal, then lesson 01 runs
-    LESSON=15_subagents modal deploy on_modal.py                                       # another lesson takes its place
-    restate deployments register connect://template                                    # once: tells Restate Cloud about the deployment
+    pip install modal python-dotenv && modal setup                                          # once
+    modal secret create restate-template --from-dotenv restate.env OPENAI_API_KEY=sk-…    # once
+    modal deploy on_modal.py                                                                # the image builds on Modal, then lesson 01 runs
+    LESSON=15_subagents modal deploy on_modal.py                                            # another lesson takes its place
+    restate deployments register connect://template                                         # once: tells Restate Cloud about the deployment
 
 `modal app logs restate-template` follows the lesson; `modal app stop
 restate-template` stops it.
