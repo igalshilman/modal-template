@@ -28,7 +28,73 @@ So, in a session object, **none** of the journaled-SDK rules apply:
 | Add an always-replay Testcontainers test                                | Not applicable. Test what happens when an attempt runs twice                                             |
 | `ctx.serviceClient(x)` / `ctx.objectClient(x, key)`                     | `ctx.rpc(service, options?)`, `ctx.rpc(object, key, options?)`, and `ctx.send(...)` likewise             |
 
-What you must do instead: **make every handler safe to run twice** (next section).
+What you must do instead: **make every handler safe to run twice** ("Delivery semantics",
+below).
+
+## Semantics: what holds, and what you handle
+
+A session object is a **virtual object whose state is a SQL database, and whose handlers
+recover from that database's commits instead of a journal**. Everything Restate defines for
+virtual objects holds; only how a handler recovers differs.
+
+- **An object per key.** A session object is addressed by its name and a key
+  (`Ledger/acme`). Each key is an isolated entity with its own state, here its own database
+  (`ctx.db`), kept in the object's Restate state and retained indefinitely. Keys share
+  nothing: no data, no queue.
+- **Durable invocations.** Each request is an _invocation_: Restate stores it before a
+  handler runs, gives it an id (`ctx.request.id`, the same on every attempt), and tracks it
+  until it completes. A caller can wait for its answer, attach to it later by id or by
+  idempotency key, or cancel it.
+- **Exclusive handlers, shared views.** `handlers` are the object's _exclusive_ handlers, a
+  single writer per key: Restate queues the key's invocations and runs them one at a time,
+  in order, each to its end before the next starts. `views` are its _shared_ handlers:
+  read-only, and run at once, beside a running handler, without queueing.
+- **Durable execution, without a journal.** An invocation runs in _attempts_: a crash, a
+  retryable error or a suspension ends one, and Restate starts another. A virtual object's
+  handler replays its journal; a session handler runs again from its first line (_explicit
+  recovery_), against what earlier attempts committed. A commit (a statement, or a
+  transaction) is durable once its promise resolves, and every later attempt sees it; what
+  an attempt didn't commit is as if it never happened. Attempts go on until the handler
+  returns, throws a `TerminalError`, or its retry policy gives up.
+
+|                      | What holds                                                                                                                                                                                                | So                                                                                                                                                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **The request**      | Stored before it runs, and answered once: the handler's result, or its terminal error. A crash isn't an answer: Restate runs the handler again while the caller waits, or attaches later                  | A caller sends a request again only if it lost its own connection to Restate, and then with an idempotency key                                                                                                                  |
+| **Execution**        | At least once, from the first line each time, partly or to the end                                                                                                                                        | Every write and call is safe to run twice ("Delivery semantics", below)                                                                                                                                                         |
+| **Isolation**        | One exclusive handler per key, for the whole invocation: through every `await`, a model's answer or an HTTP call included. No other handler of the key starts until it ends                               | A read, an outside call, and a write based on the read can't race with another request for the key: the key's own data needs no locks and no re-checks                                                                          |
+| **Blocking**         | The key's other requests wait behind it, in order, however long it takes. A handler that calls and awaits a handler of its own key, directly or through a cycle of calls, waits forever                   | Keep handlers short. A long wait goes to a workflow, an agent's `signal()`, or a delayed send. `ctx.send` (no wait) breaks a cycle; views don't queue                                                                           |
+| **Reads**            | A handler reads every commit, its own included. A view (a shared handler) reads the database as committed when it started, never a transaction in progress                                                | A view shows a running handler's progress, commit by commit                                                                                                                                                                     |
+| **Atomicity**        | Per commit (a statement, or a transaction), not per invocation: what committed before a crash, an error or a `TerminalError` stays                                                                        | What must be all or nothing goes in one transaction. A `TerminalError` thrown after a commit doesn't undo it                                                                                                                    |
+| **Order of effects** | An attempt's commits, calls and sends are stored in the order they were made: a crash loses the last ones, never one without those before it. A `tx.send` goes out if and only if its transaction commits | Await a commit before a send or call that depends on it (until its promise resolves, it isn't committed, and a send made meanwhile can be stored without it), or make it a `tx.send`. Nothing holds back an outside call (HTTP) |
+| **State**            | The database, and nothing else. Each attempt gets a new context, and the key's next invocation may run in another process                                                                                 | No per-key state in module variables: store it, or compute it again                                                                                                                                                             |
+| **Time**             | No timers inside a handler. Delayed sends are durable, any number of them per key                                                                                                                         | "Later" is a delayed `ctx.send` or `tx.send`                                                                                                                                                                                    |
+| **Cancellation**     | The handler's awaits reject with `CancelledError`. Its commits stay, and a commit the cancellation interrupted may be stored too                                                                          | A cancelled invocation is one that stopped anywhere and won't run again: its work may be partly committed                                                                                                                       |
+| **Versions**         | An invocation runs on the deployment it started on, retries included, and every version shares the key's database                                                                                         | A new schema step keeps the previous version's code working: add tables and columns, don't drop or rename what it uses                                                                                                          |
+
+In short: **you never handle two requests for a key racing each other. You always handle a
+handler that runs twice, and a handler that holds its key.**
+
+Running twice is where most bugs are. A rerun starts from the top and finds its earlier
+commits, so it must still do what came after them:
+
+```ts
+// ❌ A crash after the insert commits: the rerun returns early, and the confirmation is never sent
+const done = await ctx.db.get('SELECT 1 FROM orders WHERE id = ?', [order.id]);
+if (done) return;
+await ctx.db.execute('INSERT INTO orders (id, sku) VALUES (?, ?)', [order.id, order.sku]);
+await ctx.rpc(mailer, { idempotencyKey: `${order.id}:confirmation` }).confirm(order);
+
+// ✅ The send commits with the insert: made once, after the commit, even across a crash
+await ctx.db.transaction(async (tx) => {
+  const done = await tx.get('SELECT 1 FROM orders WHERE id = ?', [order.id]);
+  if (done) return;
+  await tx.execute('INSERT INTO orders (id, sku) VALUES (?, ?)', [order.id, order.sku]);
+  tx.send(mailer).confirm(order);
+});
+```
+
+Or don't return early: each step checks for itself (`INSERT OR IGNORE`, then the call with
+its idempotency key), so a rerun skips what is done and does what isn't.
 
 ## Delivery semantics: at least once, so idempotency matters
 
@@ -273,6 +339,12 @@ and call each other:
 - [ ] Every handler is safe to run twice (delivery is at least once): writes keyed by a
       stable id, calls and sends that change something carry an idempotency key, related
       writes in one transaction
+- [ ] A rerun that finds its earlier commits still does what came after them: no early
+      return past a send or call that follows a write (make it a `tx.send`, or let each step
+      check for itself)
+- [ ] No handler holds its key for a long wait, or calls and awaits a handler of its own key;
+      no per-key state in module variables
+- [ ] New schema steps keep the previous deployment's code working (add, don't drop or rename)
 - [ ] Callers that may send a request again use an idempotency key, and an operation that
       must never happen twice ("ever") records its business id in `ctx.db`
 - [ ] Schema changes are new steps appended at the end; no step that may have run was edited
