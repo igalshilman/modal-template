@@ -3,8 +3,8 @@
 `@restatedev/agents` runs an agent of one of five frameworks (pi, OpenCode, LangGraph,
 Claude, the DeepSeek Harness) inside a Restate session object. The conversation lives in
 the object's SQL database. A crash, a restart, or a person who takes a day to approve
-changes nothing: each message is answered once, and Restate's own tools make each call
-once. Tools of your own need care: see "Tools that must not run twice".
+changes nothing: each message is answered once per invocation (a message resent without
+an idempotency key is a new one), and Restate's own tools make each call once. Tools of your own need care: see "Tools that must not run twice".
 
 An agent **is a session object**, so [session-objects.md](session-objects.md) applies to it
 and to every handler you add to it: no journal replay, no `ctx.run`, `Promise.all` is fine,

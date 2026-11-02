@@ -45,21 +45,21 @@ Answer in order; the first "yes" is the type.
 
 When 3 and 4 both fit, prefer the **session object** if its data will grow or be queried,
 and the **virtual object** if its handlers need to wait (sleep, awakeables) or run several
-side effects each exactly once.
+side effects each once (`ctx.run`, recorded in the journal).
 
 ## Session object or virtual object?
 
 Both are keyed, with one writer per key and concurrent readers. The difference:
 
-|              | Session object                                                                                            | Virtual object                                          |
-| ------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| State        | Tables, queried with SQL; transactions; up to 10 GiB per key                                              | A few JSON values by name                               |
-| Readers      | Views: a snapshot of what's committed, while a handler writes                                             | Shared handlers: `ctx.get`                              |
-| Side effects | Direct calls, made safe to repeat (idempotency keys, stable ids)                                          | Exactly once, in `ctx.run`                              |
-| Waiting      | None inside a handler: a delayed `ctx.send`, a signal (agents), or a workflow                             | `ctx.sleep`, awakeables, inside the handler             |
-| Recovery     | Runs again from the first line; correctness comes from the data                                           | Replays the journal; correctness comes from determinism |
-| Costs        | Every read is journaled with its value; one round trip per commit; a suspension restarts the handler      | The journal of each invocation                          |
-| Deployment   | A long-lived process (`restate.serve`, or `restate.connect` as on Modal), never request/response (Lambda) | Any                                                     |
+|              | Session object                                                                                            | Virtual object                                                                      |
+| ------------ | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| State        | Tables, queried with SQL; transactions; up to 10 GiB per key                                              | A few JSON values by name                                                           |
+| Readers      | Views: a snapshot of what's committed, while a handler writes                                             | Shared handlers: `ctx.get`                                                          |
+| Side effects | Direct calls, made safe to repeat (idempotency keys, stable ids)                                          | In `ctx.run`: once recorded, not repeated (a crash before the record runs it again) |
+| Waiting      | None inside a handler: a delayed `ctx.send`, a signal (agents), or a workflow                             | `ctx.sleep`, awakeables, inside the handler                                         |
+| Recovery     | Runs again from the first line; correctness comes from the data                                           | Replays the journal; correctness comes from determinism                             |
+| Costs        | Every read is journaled with its value; one round trip per commit; a suspension restarts the handler      | The journal of each invocation                                                      |
+| Deployment   | A long-lived process (`restate.serve`, or `restate.connect` as on Modal), never request/response (Lambda) | Any                                                                                 |
 
 ## Combine them
 
