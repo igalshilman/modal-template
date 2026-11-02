@@ -1,5 +1,5 @@
 node_modules/
-# Your keys (see restate.env.example).
+# Keys, if you keep them in a file: `modal secret create restate-template --from-dotenv restate.env`.
 restate.env
 .env
 .env.*

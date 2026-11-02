@@ -2,15 +2,15 @@
 A lesson on Modal, connected to Restate Cloud.
 
 One container runs the lesson, which connects out to Restate Cloud with
-`restate.connect` (the last line of each lesson): Modal exposes no port. The
-container gets the keys in restate.env, next to this file (copy
-restate.env.example): the connect key from the Cloud UI, Development →
-Configure SDK, and OPENAI_API_KEY for lessons 09 to 16.
+`restate.connect` (the last line of each lesson): Modal exposes no port. Its
+keys are a Modal secret, created once: the connect key from the Cloud UI,
+Development → Configure SDK, and OPENAI_API_KEY for lessons 09 to 16.
 
-    pip install modal python-dotenv && modal setup     # once
-    modal deploy on_modal.py                           # the image builds on Modal, then lesson 01 runs
-    LESSON=15_subagents modal deploy on_modal.py       # another lesson takes its place
-    restate deployments register connect://template    # once: tells Restate Cloud about the deployment
+    pip install modal && modal setup                                                   # once
+    modal secret create restate-template RESTATE_CONNECT_KEY=rstcloudv1_… OPENAI_API_KEY=sk-…   # once
+    modal deploy on_modal.py                                                           # the image builds on Modal, then lesson 01 runs
+    LESSON=15_subagents modal deploy on_modal.py                                       # another lesson takes its place
+    restate deployments register connect://template                                    # once: tells Restate Cloud about the deployment
 
 `modal app logs restate-template` follows the lesson; `modal app stop
 restate-template` stops it.
@@ -42,7 +42,7 @@ app = modal.App("restate-template", image=image)
 @app.cls(
     min_containers=1,  # the lesson reaches Restate Cloud from here: one container, always up
     max_containers=1,
-    secrets=[modal.Secret.from_dotenv(HERE, filename="restate.env")],  # read where `modal deploy` runs
+    secrets=[modal.Secret.from_name("restate-template")],
     env={"RESTATE_CONNECT_NAME": "template", "LESSON": LESSON},
 )
 class Lesson:

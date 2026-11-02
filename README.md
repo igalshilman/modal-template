@@ -26,12 +26,13 @@ You need a [Restate Cloud](https://cloud.restate.dev) environment and a
 [Modal](https://modal.com) account.
 
 ```sh
-pip install modal && modal setup       # once
-cp restate.env.example restate.env     # then fill in your keys
+pip install modal && modal setup                                                       # once
+modal secret create restate-template RESTATE_CONNECT_KEY=rstcloudv1_… OPENAI_API_KEY=sk-…   # once
 ```
 
-`restate.env` holds the connect key (Cloud UI → Development → Configure SDK)
-and, for lessons 09 to 16, your OpenAI API key. It is in `.gitignore`.
+The secret holds the connect key (Cloud UI → Development → Configure SDK)
+and, for lessons 09 to 16, your OpenAI API key. `on_modal.py` gives it to the
+container.
 
 ## Run a lesson
 
