@@ -50,16 +50,21 @@ logged into your environment:
 restate deployments register connect://template
 ```
 
-Now call the wallet through your environment's ingress (Cloud UI →
-Development → Configure Client gives you the URL and a key), for example:
+Now call the wallet through your environment's ingress: from the Cloud UI's
+playground, or from code with the ingress key (Cloud UI → Development →
+Configure Client) in `RESTATE_INGRESS_KEY`:
 
-```sh
-curl $RESTATE_INGRESS_URL/wallet/alice/hello -H "Authorization: Bearer $RESTATE_INGRESS_KEY"   # "Hello, alice!"
+```ts
+import * as clients from '@restatedev/restate-sdk-clients';
+
+const rs = clients.connect({}); // the environment and the key from RESTATE_INGRESS_KEY
+const alice = rs.objectClient({ name: 'wallet' }, 'alice');
+console.log(await alice.hello()); // "Hello, alice!"
 ```
 
-The requests to try are at the top of each lesson, written for a local
-Restate (`localhost:8080`): on Cloud, use the ingress URL and the key in the
-same way. The Cloud UI shows every request and what it did.
+The requests to try are at the top of each lesson, as `curl` against a local
+Restate: on Cloud, send the same paths and bodies through the ingress. The
+Cloud UI shows every request and what it did.
 
 To move on, deploy the next lesson and register again: the wallets you filled
 in one lesson are still there in the next, just as a real application keeps
