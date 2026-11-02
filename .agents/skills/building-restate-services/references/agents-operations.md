@@ -21,7 +21,10 @@ curl localhost:8080/restate/invocation/assistant/alice/chat/msg-1/attach        
   another is answered waits.
 - Use `/send` when a turn may take longer than an HTTP request should wait (a tool that
   waits for a person, a coding task).
-- A caller that may send a message again (after a timeout) gives it an idempotency key.
+- A caller that may send a message again (after a timeout) gives it an idempotency key:
+  without one, the repeat is a new invocation, and the agent answers it again, tools
+  included (delivery is at least once: "Delivery semantics" in
+  [session-objects.md](session-objects.md)).
 
 From a Restate handler, through the agent's definition: `await ctx.rpc(assistant,
 'alice').chat('Hi')` from a session object, `ctx.objectClient(assistant, 'alice').chat('Hi')`

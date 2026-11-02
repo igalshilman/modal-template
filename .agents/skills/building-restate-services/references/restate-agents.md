@@ -122,7 +122,10 @@ import { call, send, signal, subagent, tool, workflow } from '@restatedev/agents
 
 ### Tools that must not run twice
 
-A crash can cut a tool call off. What happens next depends on the framework:
+An agent, like any session object, is delivered at least once, so its tools can run more
+than once: see "Delivery semantics" in [session-objects.md](session-objects.md) for the
+layers (an attempt, a caller resending a message, the same operation later). A crash can
+cut a tool call off. What happens next depends on the framework:
 
 | Framework                  | After a crash cut a tool call off                                                              | So a tool that changes something outside                                                                  |
 | -------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |

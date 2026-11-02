@@ -28,18 +28,78 @@ So, in a session object, **none** of the journaled-SDK rules apply:
 | Add an always-replay Testcontainers test                                | Not applicable. Test what happens when an attempt runs twice                                             |
 | `ctx.serviceClient(x)` / `ctx.objectClient(x, key)`                     | `ctx.rpc(service, options?)`, `ctx.rpc(object, key, options?)`, and `ctx.send(...)` likewise             |
 
-What you must do instead: **make every handler safe to run twice.**
+What you must do instead: **make every handler safe to run twice** (next section).
 
-- Record an id that is the same on every attempt with your writes, and check for it
-  first: `ctx.request.id`, or an id from the input (an order id, a transfer id).
-  `INSERT OR IGNORE` with a unique id column is the usual way.
-- Give a call or send that changes something an idempotency key built from the request
-  id and what the call is for: ``{ idempotencyKey: `${ctx.request.id}:claim` }``. Without one,
-  a new attempt makes the call again. With one, it reaches the first attempt's invocation
-  and gets its result.
-- Writes that must succeed or fail together go in one `ctx.db.transaction`. A crash
-  between two separate statements keeps the first one.
-- A send that must happen only if a write commits is a `tx.send` inside that transaction.
+## Delivery semantics: at least once, so idempotency matters
+
+Restate delivers each invocation of a session object **at least once**, and may run its
+handler more than once: every attempt (after a crash, a retryable error, a suspension, a lost
+connection) runs it from its first line, partly or to the end. A journaled handler turns at
+least once into effectively once by replaying its journal. A session handler has no journal
+to replay, so:
+
+> **Effectively once = at-least-once delivery + idempotent handlers.** A second run must find
+> the first run's work, and do nothing more.
+
+What runs how often:
+
+|                                                   | Runs or is delivered                                                           | So                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| The handler's code                                | At least once per invocation, partly or fully                                  | Every write and call must be safe to repeat                                     |
+| A statement or transaction that committed         | Durable once it returns; a new attempt executes the same code again            | Record a stable id with the write, and check for it first (`INSERT OR IGNORE`)  |
+| `ctx.rpc` / `ctx.send` without an idempotency key | Again on every attempt that reaches it                                         | Give a call or send that changes something a key                                |
+| `ctx.rpc` / `ctx.send` with an idempotency key    | Once per key: a repeat reaches the first invocation, and gets its result       | Build the key from `ctx.request.id` and what the call is for                    |
+| `tx.send`                                         | Exactly once per committed transaction, never on a rollback                    | Needs no key of its own (the package gives each one `transaction/<id>/<index>`) |
+| A view                                            | At least once (a view is retried, after 16 commits for example); it only reads | Nothing to do                                                                   |
+| An outside API call (HTTP, email, payment)        | As often as the handler runs                                                   | See "Side effects outside Restate" below                                        |
+
+### Three things can repeat, and each has its protection
+
+| What repeats                                                                   | Its `ctx.request.id`                                                              | Protect with                                                                                                    | Protection lasts                                                                                                |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| An attempt of the same invocation (crash, retry)                               | The same                                                                          | Writes keyed by `ctx.request.id`; calls and sends with keys built from it; `tx.send`                            | Rows in `ctx.db`: as long as the data. Keys: the target's idempotency retention                                 |
+| The same request, sent again by its caller (a client retrying after a timeout) | **New**: it is a new invocation, so writes keyed by `ctx.request.id` happen again | An idempotency key from the caller, at the ingress; or an id from the input (an order id), recorded in `ctx.db` | The ingress key: the handler's idempotency retention, a day by default. The id in `ctx.db`: as long as the data |
+| The same business operation, later (the same order next week)                  | New                                                                               | An id from the input, recorded in `ctx.db`                                                                      | As long as the data                                                                                             |
+
+- **Callers that may send a request again give it an idempotency key.** The repeat then
+  starts no new invocation: Restate answers it with the first one's result, or attaches it to
+  the one still running.
+
+  ```sh
+  curl localhost:8080/orders/alice/place -H 'idempotency-key: order-1042' --json '{"sku": "apple"}'
+  curl localhost:8080/restate/invocation/orders/alice/place/order-1042/attach   # its result, by the key
+  ```
+
+  From code: `client.place(input, clients.rpc.opts({ idempotencyKey: 'order-1042' }))`, or
+  `clients.rpc.sendOpts({ idempotencyKey })` for a one-way send.
+
+- **A key names one request, whatever its input.** A repeat with another input silently gets
+  the earlier result. Build keys from what makes the request unique, and never reuse one for
+  a different request.
+- **Keys expire** after the idempotency retention (a day by default): a repeat after that is
+  a new invocation. For "never twice, ever" (a payment, a transfer), record the business id in
+  `ctx.db` and check it, whatever the caller sends.
+- **A delayed send repeated with the same key keeps its first timer**: Restate drops the
+  repeat, and does not restart the delay.
+- **Related writes go in one `ctx.db.transaction`.** A crash between two separate statements
+  keeps the first one, and the next attempt runs both again.
+- **A send that must happen only if a write commits is a `tx.send`** inside that transaction.
+
+### Agents: the same three layers
+
+An agent's `chat` is a session handler, so the table above applies to it:
+
+- **A retried attempt** of a message: `@restatedev/agents` answers each message once per
+  invocation. A model call already answered isn't made again, and a completed tool call isn't
+  repeated (see [restate-agents.md](restate-agents.md) for a tool call a crash cut off).
+- **A caller that sends the same message again without an idempotency key** starts a new
+  invocation: the agent answers it again, model calls and tool calls included. A UI or
+  client that may resend a message gives it an idempotency key
+  (`curl …/chat/send -H 'idempotency-key: msg-1'`, or `clients.rpc.sendOpts({ idempotencyKey })`).
+- **Tools run at least once:** a tool that changes something outside passes its
+  `idempotencyKey` on, or takes `retryOf` on OpenCode and the DeepSeek Harness
+  ([restate-agents.md](restate-agents.md), "Tools that must not run twice"). A tool's own
+  "never twice, ever" needs a business id recorded in `ctx.db`, as above.
 
 ### Side effects outside Restate (an HTTP API, an email, a payment)
 
@@ -207,8 +267,11 @@ and call each other:
 
 ## Before finishing (session objects)
 
-- [ ] Every handler is safe to run twice: writes keyed by a stable id, calls and sends that
-      change something carry an idempotency key, related writes in one transaction
+- [ ] Every handler is safe to run twice (delivery is at least once): writes keyed by a
+      stable id, calls and sends that change something carry an idempotency key, related
+      writes in one transaction
+- [ ] Callers that may send a request again use an idempotency key, and an operation that
+      must never happen twice ("ever") records its business id in `ctx.db`
 - [ ] Schema changes are new steps appended at the end; no step that may have run was edited
 - [ ] Views only read; writes are in handlers
 - [ ] The SQL is SQLite's, and follows [session-sql.md](session-sql.md): `INTEGER PRIMARY KEY`,
