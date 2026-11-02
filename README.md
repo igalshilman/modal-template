@@ -124,9 +124,3 @@ curl localhost:8080/wallet/alice/hello
 | Lesson                                     | You learn                                          |
 | ------------------------------------------ | -------------------------------------------------- |
 | [`16_pi_durable.ts`](src/16_pi_durable.ts) | What `pi.prompt` does, written out with pi-durable |
-
-## Next
-
-[`@restatedev/sessions`](https://github.com/restatedev/sdk-sessions/tree/main/packages/sessions)
-and [`@restatedev/agents`](https://github.com/restatedev/sdk-sessions/tree/main/packages/agents)
-cover everything the lessons use, in full.
