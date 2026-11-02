@@ -4,4 +4,5 @@ allowBuilds:
   '@google/genai': true
   protobufjs: true
 # Restate's packages as soon as they are released, not a day later (pnpm's default minimum age).
-minimumReleaseAge: 0
+minimumReleaseAgeExclude:
+  - '@restatedev/*'
