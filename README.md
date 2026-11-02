@@ -5,17 +5,11 @@ A Restate application running on [Modal](https://modal.com), connected to
 with `restate.connect`, so Modal exposes no port and no URL: one container,
 always up, that Restate Cloud reaches over that connection.
 
-The application is a wallet for every user, with a SQL database per wallet
-and an agent in it, built step by step: each file in `src/` runs on its own,
-and its top comment lists the requests to try. `01_object.ts` is the
-simplest; from `09_prompt.ts` on it asks OpenAI's models.
-
 ## Before you start
 
 Get the keys of your Restate Cloud environment from
-[Configure SDK](https://cloud.restate.dev/to/developers/integration#configure-sdk)
-and save the file here as `restate.env` (it is in `.gitignore`). For the
-agent, add your OpenAI API key to it as `OPENAI_API_KEY`.
+[**Configure SDK**](https://cloud.restate.dev/to/developers/integration#configure-sdk)
+and save the file here as `restate.env`.
 
 ## Run it locally
 
@@ -30,33 +24,10 @@ Then, once, [register `connect://template`](https://cloud.restate.dev/to/overvie
 in the Cloud UI (the application prints this link too), or with the CLI:
 
 ```sh
-npx @restatedev/restate deployments register connect://template
+npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://template
 ```
 
-Send a request from the
-[playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello):
-the wallet's `hello` handler, with `alice` as the key, answers
-"Hello, alice!". Or from code, with the ingress key in `RESTATE_INGRESS_KEY`:
-
-```ts
-import * as clients from '@restatedev/restate-sdk-clients';
-
-const rs = clients.connect({});
-const alice = rs.objectClient({ name: 'wallet' }, 'alice');
-console.log(await alice.hello()); // "Hello, alice!"
-```
-
-To run another file, stop this one, start that, and register again.
-
-Without Restate Cloud, every file ends with the `restate.serve` line to use
-instead of `restate.connect`, commented out, for a Restate on this machine:
-
-```sh
-node src/01_object.ts                                                           # on port 9080
-npx @restatedev/restate-server                                                  # Restate, in another terminal
-npx @restatedev/restate -y deployments register --force http://localhost:9080
-curl localhost:8080/wallet/alice/hello
-```
+Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet#/operations/hello).
 
 ## Run it on Modal
 
@@ -74,3 +45,29 @@ LESSON=15_subagents modal deploy on_modal.py                                    
 Register `connect://template` as above, and send requests the same way.
 `modal app logs restate-template` follows it; `modal app stop restate-template`
 stops it.
+
+## Using client to send requests
+
+To send requests using the ingress client:
+
+```ts
+import * as clients from '@restatedev/restate-sdk-clients';
+
+const rs = clients.connect();
+const alice = rs.objectClient({ name: 'wallet' }, 'alice');
+console.log(await alice.hello()); // "Hello, alice!"
+```
+
+This will use the configured key `RESTATE_INGRESS_KEY` from `restate.env`
+
+To run another file, stop this one, start that, and register again.
+
+Without Restate Cloud, every file ends with the `restate.serve` line to use
+instead of `restate.connect`, commented out, for a Restate on this machine:
+
+```sh
+node src/01_object.ts                                                           # on port 9080
+npx @restatedev/restate-server                                                  # Restate, in another terminal
+npx @restatedev/restate -y deployments register --force http://localhost:9080
+curl localhost:8080/wallet/alice/hello
+```

@@ -8,11 +8,6 @@
  *
  * The wallet records each deposit as a row, and the balance is their sum.
  * Bob's wallet is another key, so it has a database of its own.
- *
- *   node src/02_database.ts                              # and register it (see 01)
- *   curl localhost:8080/wallet/alice/deposit --json 10   # 10
- *   curl localhost:8080/wallet/alice/deposit --json 5    # 15
- *   curl localhost:8080/wallet/bob/deposit --json 7      # 7
  */
 import * as restate from '@restatedev/sessions';
 
@@ -31,4 +26,4 @@ const wallet = restate.sessionObject({
 
 restate.connect({ services: [wallet], name: "wallet-v1" });
 // To run locally, with a Restate server on this machine, use this instead:
-// await restate.serve({ services: [wallet], port: 9080 });
+// await restate.serve({ services: [wallet] });
