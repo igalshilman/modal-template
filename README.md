@@ -12,22 +12,18 @@ is built on two libraries for the Restate TypeScript SDK:
   runs AI agents inside sessions, with each conversation stored in its session's
   database. It supports pi, OpenCode, LangGraph, Claude and the DeepSeek Harness.
 
-The app ([`src/app.ts`](src/app.ts)) is a wallet per user, in one file. It connects out to
-Restate Cloud, so it needs no open port: on Modal, it is one always-on container. If you
-are new to sessions, [the tutorial](#the-tutorial) comes with it: a wallet built one idea
-per file, from a plain virtual object up to an assistant that pays your friends and asks
-before large transfers.
+The app in [`src/app.ts`](src/app.ts) is a demo: notes per user, each user's notes in their
+own database. Replace it with your own services. To learn sessions and agents step by
+step, try [the tutorial](#the-tutorial).
 
 ## Before you start
 
 Get the connect key of your Restate Cloud environment from
 [**Configure SDK -> Create connect key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
 
-The app connects to Restate Cloud with `restate.connect` (the end of
-[`src/app.ts`](src/app.ts)): it dials out to your environment, so it needs no open port
-and no public URL. It reads the key from `RESTATE_CONNECT_KEY`, and connects as the
-deployment `wallet-v1`, the name you register once (below). Run more copies under the same
-name, and Restate Cloud spreads the requests across them.
+The app connects to your Restate Cloud environment with `restate.connect`, at the end of
+[`src/app.ts`](src/app.ts). It reads the key from `RESTATE_CONNECT_KEY`, and connects as
+the deployment `notes-v1`, the name you register once (below).
 
 ## Run it locally
 
@@ -38,14 +34,14 @@ pnpm install
 RESTATE_CONNECT_KEY=… node src/app.ts
 ```
 
-Then, once, [register `connect://wallet-v1`](https://cloud.restate.dev/to/overview?register-deployment=connect://wallet-v1)
+Then, once, [register `connect://notes-v1`](https://cloud.restate.dev/to/overview?register-deployment=connect://notes-v1)
 in the Cloud UI (the application prints this link too), or with the CLI:
 
 ```sh
-npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://wallet-v1
+npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://notes-v1
 ```
 
-Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet).
+Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=notes).
 
 To use a Restate server on your machine instead of Cloud, swap `restate.connect` for
 `restate.serve` in [`src/app.ts`](src/app.ts): its comment shows both.
@@ -61,7 +57,7 @@ modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY}
 modal deploy modal/on_modal.py
 ```
 
-Register `connect://wallet-v1` as above, and send requests the same way.
+Register `connect://notes-v1` as above, and send requests the same way.
 `modal app logs restate-template` follows it.
 
 ## Using client to send requests
@@ -74,16 +70,16 @@ and send requests with `@restatedev/restate-sdk-clients`:
 import * as clients from '@restatedev/restate-sdk-clients';
 
 const rs = clients.connect();
-const alice = rs.objectClient({ name: 'wallet' }, 'alice');
-console.log(await alice.deposit(10)); // 10, then 20 the next time
+const alice = rs.objectClient({ name: 'notes' }, 'alice');
+await alice.add('Buy milk');
+console.log(await alice.list()); // ["Buy milk"]
 ```
 
 ## Session objects
 
 A session object is a virtual object with a `schema` and a database, `ctx.db`. Each key
-(`alice`, `bob`, …) gets its own SQLite-compatible database of up to 10 GiB. This one keeps
-notes per user
-([`examples/basic/notes.ts`](https://github.com/restatedev/sdk-sessions/blob/main/packages/examples/basic/notes.ts)):
+(`alice`, `bob`, …) gets its own SQLite-compatible database of up to 10 GiB. The demo app,
+[`src/app.ts`](src/app.ts), keeps notes per user:
 
 ```ts
 import * as restate from '@restatedev/sessions';
@@ -107,9 +103,8 @@ const notes = restate.sessionObject({
 });
 ```
 
-To serve it, add it to `services` in [`src/app.ts`](src/app.ts). The requests here go to a
-local Restate server's ingress; with Restate Cloud, send them from the playground or with a
-client:
+The requests here go to a local Restate server's ingress; with Restate Cloud, send them
+from the playground or with a client:
 
 ```sh
 curl localhost:8080/notes/alice/add --json '"Buy milk"'
@@ -164,7 +159,7 @@ curl localhost:8080/support/alice/chat -d 'Order 103 arrived broken, can I get m
 curl localhost:8080/support/alice/signal --json '{"name": "approval", "value": "approved"}'
 ```
 
-To serve agents, add them to `services` together with `signals` from `@restatedev/agents`,
+To serve agents, add them to `services` in [`src/app.ts`](src/app.ts), together with `signals` from `@restatedev/agents`,
 which their `signal` tools are answered through (as
 [`src/tutorial/index.ts`](src/tutorial/index.ts) does). The models need their API key in the
 environment, such as `OPENAI_API_KEY`: on Modal, add it to the secret.
@@ -241,7 +236,7 @@ Each lesson in [`src/tutorial`](src/tutorial) is one file: the wallet so far, pl
 idea, explained in the comment at its top with the requests to try it.
 [`src/tutorial/index.ts`](src/tutorial/index.ts) collects them all into one array,
 `tutorial`. Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so they
-live side by side in one deployment, next to the wallet.
+live side by side in one deployment, next to the notes.
 
 The tutorial is off by default. To try it, include it in [`src/app.ts`](src/app.ts), as the
 comment at its bottom shows:
@@ -249,7 +244,7 @@ comment at its bottom shows:
 ```ts
 import { tutorial } from './tutorial/index.ts';
 
-const services = [wallet, ...tutorial];
+const services = [notes, ...tutorial];
 ```
 
 Lessons 09 to 16 ask OpenAI's models, so add `OPENAI_API_KEY` too: to your environment
@@ -281,8 +276,8 @@ RESTATE_CONNECT_KEY=… OPENAI_API_KEY=… --force`).
 
 ## Repository layout
 
-- [`src/app.ts`](src/app.ts): the application, the services it serves and how it reaches
-  Restate (Restate Cloud, or a local server).
+- [`src/app.ts`](src/app.ts): the demo app, notes per user, and how it reaches Restate
+  (Restate Cloud, or a local server).
 - [`src/tutorial`](src/tutorial): the tutorial's lessons, off by default.
 - [`modal/on_modal.py`](modal/on_modal.py): the Modal app, which builds the image and runs
   `src/app.ts` in one always-on container.
