@@ -79,16 +79,47 @@ for await (const change of follow(restate, agent('assistant'), 'alice', { signal
 `asText(message)` is a message as a terminal shows it. A follower can carry on later from
 `change.cursor` (`follow(..., { cursor })`).
 
-## Stop, steer, clear
+## Turns, stop, steer, clear
 
 | View    | What it does                                                                                                                                                                                                                                        | Answers                                |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | `stop`  | Cancels the message being answered (Restate's cancellation): the turn ends, cut-off tool calls are recorded as cancelled, and the calls its tools made (a wait, a subagent's task, a workflow) are cancelled with it. The next waiting message runs | `{ stopped: <invocation id> \| null }` |
-| `steer` | Adds a message to the turn being answered: taken at its next tool call (pi, OpenCode, DeepSeek). Claude and LangGraph take no steering: it's answered next. With no turn running, it is a message of its own                                        | `{ invocationId, steered }`            |
-| `clear` | Stops the turn, then forgets the conversation: the key's database and what `signals` holds for it                                                                                                                                                   | `{ stopped: … }`                       |
+| `steer` | Adds a message to the turn being answered, which takes it after its next tool call (pi, OpenCode, DeepSeek). Not taken by then, or with no turn running, it becomes a message of its own (see below)                                                | `{ invocationId, steered }`            |
+| `clear` | Stops the turn, then forgets the conversation: the key's database and what `signals` holds for it, steered messages included                                                                                                                        | `{ stopped: … }`                       |
 
 To interrupt with a new message: `stop`, then send it. Messages already waiting are answered
 first. A message sent before `clear` is answered, then forgotten too.
+
+### Turns and steering, precisely
+
+- **A turn is the agent answering one message: one invocation of `chat`**, with however many
+  model calls and tool calls it takes. Turns of one key run one at a time, in the order their
+  messages came; `status.answering` is the turn in progress. The agent's `signals` object
+  records each turn's start and its close.
+- **A steer during a turn** is queued for that turn (its id `<turn>:steer:<n>`), and
+  `steer` answers `{ invocationId: <the turn's>, steered: true }`. The turn takes the queued
+  steers **after each tool call ends**, on the frameworks that steer: pi, OpenCode and the
+  DeepSeek Harness. They are taken by id, so a retried attempt neither loses nor repeats one.
+- **A steer with no turn running**, or to a turn that has already closed, is sent to `chat`
+  as a message of its own: `{ invocationId: <the new one>, steered: false }`.
+- **When a turn closes, each steer it didn't take is sent as a message of its own**, queued
+  behind messages already waiting (not ahead of them). That covers a turn that ended without
+  another tool call, and every steer on Claude and LangGraph, which never take steers.
+- **A stopped turn drops the steers it didn't take.** Deliveries (`webhook()`, `deliver()`)
+  are never dropped: they are answered after the turn, even a stopped one.
+- **A `background` agent** (a subagent, say) reports to its `signals` only when a turn ends,
+  so a steer waits for the end, and is then answered as a message of its own.
+- **An attempt is not a turn.** A crash or a suspension ends an attempt; the next attempt
+  continues the same turn, with the same steers. Only a stop, an answer or a terminal
+  failure ends a turn.
+
+So, for a UI:
+
+| The user types while the agent works…               | Use                 | What happens                                                                                   |
+| --------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
+| "Only Monday, please" (a correction for this turn)  | `steer`             | Taken after the next tool call; if none comes, answered right after the turn                   |
+| "Forget that, do something else" (replace the turn) | `stop`, then `chat` | The turn ends now; its untaken steers are dropped; the new message follows any already waiting |
+| Another question (for later)                        | `chat` (`/send`)    | Queued: answered after the current turn, and any messages already waiting                      |
 
 ## Failures and retries
 
