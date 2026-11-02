@@ -33,19 +33,37 @@ below).
 
 ## Semantics: what holds, and what you handle
 
-A session object is **a queue of durable invocations per key, run one at a time, over a
-database where only commits last**. Restate stores each invocation before its handler runs.
-The handler then has the key to itself until it ends, and after a failure it runs again from
-its first line, against what earlier attempts committed, until it returns, throws a
-`TerminalError`, or its retry policy gives up.
+A session object is a **virtual object whose state is a SQL database, and whose handlers
+recover from that database's commits instead of a journal**. Everything Restate defines for
+virtual objects holds; only how a handler recovers differs.
+
+- **An object per key.** A session object is addressed by its name and a key
+  (`Ledger/acme`). Each key is an isolated entity with its own state, here its own database
+  (`ctx.db`), kept in the object's Restate state and retained indefinitely. Keys share
+  nothing: no data, no queue.
+- **Durable invocations.** Each request is an _invocation_: Restate stores it before a
+  handler runs, gives it an id (`ctx.request.id`, the same on every attempt), and tracks it
+  until it completes. A caller can wait for its answer, attach to it later by id or by
+  idempotency key, or cancel it.
+- **Exclusive handlers, shared views.** `handlers` are the object's _exclusive_ handlers, a
+  single writer per key: Restate queues the key's invocations and runs them one at a time,
+  in order, each to its end before the next starts. `views` are its _shared_ handlers:
+  read-only, and run at once, beside a running handler, without queueing.
+- **Durable execution, without a journal.** An invocation runs in _attempts_: a crash, a
+  retryable error or a suspension ends one, and Restate starts another. A virtual object's
+  handler replays its journal; a session handler runs again from its first line (_explicit
+  recovery_), against what earlier attempts committed. A commit (a statement, or a
+  transaction) is durable once its promise resolves, and every later attempt sees it; what
+  an attempt didn't commit is as if it never happened. Attempts go on until the handler
+  returns, throws a `TerminalError`, or its retry policy gives up.
 
 |                      | What holds                                                                                                                                                                                                | So                                                                                                                                                                                                                              |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **The request**      | Stored before it runs, and answered once: the handler's result, or its terminal error. A crash isn't an answer: Restate runs the handler again while the caller waits, or attaches later                  | A caller sends a request again only if it lost its own connection to Restate, and then with an idempotency key                                                                                                                  |
 | **Execution**        | At least once, from the first line each time, partly or to the end                                                                                                                                        | Every write and call is safe to run twice ("Delivery semantics", below)                                                                                                                                                         |
-| **Isolation**        | One handler per key, for the whole invocation: through every `await`, a model's answer or an HTTP call included. No other handler of the key starts until it ends                                         | A read, an outside call, and a write based on the read can't race with another request for the key: the key's own data needs no locks and no re-checks                                                                          |
+| **Isolation**        | One exclusive handler per key, for the whole invocation: through every `await`, a model's answer or an HTTP call included. No other handler of the key starts until it ends                               | A read, an outside call, and a write based on the read can't race with another request for the key: the key's own data needs no locks and no re-checks                                                                          |
 | **Blocking**         | The key's other requests wait behind it, in order, however long it takes. A handler that calls and awaits a handler of its own key, directly or through a cycle of calls, waits forever                   | Keep handlers short. A long wait goes to a workflow, an agent's `signal()`, or a delayed send. `ctx.send` (no wait) breaks a cycle; views don't queue                                                                           |
-| **Reads**            | A handler reads every commit, its own included. A view reads the database as committed when it started, never a transaction in progress                                                                   | A view shows a running handler's progress, commit by commit                                                                                                                                                                     |
+| **Reads**            | A handler reads every commit, its own included. A view (a shared handler) reads the database as committed when it started, never a transaction in progress                                                | A view shows a running handler's progress, commit by commit                                                                                                                                                                     |
 | **Atomicity**        | Per commit (a statement, or a transaction), not per invocation: what committed before a crash, an error or a `TerminalError` stays                                                                        | What must be all or nothing goes in one transaction. A `TerminalError` thrown after a commit doesn't undo it                                                                                                                    |
 | **Order of effects** | An attempt's commits, calls and sends are stored in the order they were made: a crash loses the last ones, never one without those before it. A `tx.send` goes out if and only if its transaction commits | Await a commit before a send or call that depends on it (until its promise resolves, it isn't committed, and a send made meanwhile can be stored without it), or make it a `tx.send`. Nothing holds back an outside call (HTTP) |
 | **State**            | The database, and nothing else. Each attempt gets a new context, and the key's next invocation may run in another process                                                                                 | No per-key state in module variables: store it, or compute it again                                                                                                                                                             |
