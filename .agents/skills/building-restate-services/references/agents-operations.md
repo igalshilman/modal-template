@@ -94,17 +94,31 @@ sent before `clear` is answered, then forgotten too.
 
 ### Turns, precisely
 
-The library documents this in full: [TURN-SEMANTICS.md](https://github.com/restatedev/sdk-sessions/blob/main/packages/agents/TURN-SEMANTICS.md).
-
 - **A turn is the agent answering one message: its `chat` invocation, from its start to its
   end**, with however many model calls and tool calls it takes. A turn is the invocation, not
-  one run of it. Turns of one key run one at a time, in the order their messages came.
+  one run of it. Turns of one key run one at a time, in the order their messages came. A
+  message sent with an idempotency key is one invocation, so one turn, however often it is
+  sent.
 - **The companion** (the agent's `signals` object, keyed `<agent>:<key>`) records each turn's
   start and its close: `status.answering` is the turn from one to the other, or `null`.
+- **Its life:** the turn starts (`status` says it answers), then each tool call publishes as
+  it starts and as it ends, then the turn writes its last change, **closes, and only then
+  returns the answer**. So `status` is idle by the time the caller has the answer.
 - **An attempt is not a turn.** A crash, a lost connection or a suspension ends an attempt;
   the next attempt runs the handler from its first line and continues the same turn from the
-  database: the prompt by its id (the invocation's id), tool calls by their idempotency keys,
-  and a tool's wait rejoins the same wait. `status` keeps answering the turn meanwhile.
+  database:
+  - the prompt by its id (the invocation's id; later prompts of the same invocation
+    `<id>:2`, `<id>:3`), found stored, answered or not, rather than asked again;
+  - tool calls by their idempotency keys, `<invocation>:<call id>`. Restate's own tools
+    (`call`, `send`, `signal`, `subagent`, `workflow`) make their call once however often
+    the tool call runs: on a framework that gives a cut-off call a new id (OpenCode, the
+    DeepSeek Harness), they get the earlier call's id back. Tools of your own need the
+    `retryOf` pattern there (restate-agents.md);
+  - a tool's wait rejoins the same wait in the companion, by that key.
+
+  `status` keeps answering the turn meanwhile. An attempt that ends while its process lives
+  on stops its work, a model request included: that is not a cancellation, the turn goes on.
+
 - **Deliveries** (`webhook()`, `deliver()`) are messages of their own, keyed by the delivery:
   answered after the message being worked on, even a stopped one. A delivery is never dropped.
 - **A `background` agent** (a subagent, say) publishes only each turn's end: followers see a
@@ -121,6 +135,29 @@ How a turn can end:
 | **Crashed** (a process died, a retryable error)      | Nothing yet: Restate runs it again | Still answering: the next attempt goes on with it                         |
 | **Killed** (Restate's admin API)                     | Nothing: no code runs              | The companion's watch on the turn closes it: idle, its waits dropped      |
 | **Out of retries** (100,000 attempts, about 11 days) | The failure                        | Closed by the watch if Restate fails it; a turn Restate pauses stays open |
+
+- **Stopping is safe to repeat.** `stop` reads the turn to cancel with an idempotency key
+  of its own request, so a `stop` that Restate runs again cancels the same turn again (which
+  does nothing), never the message that started after it. A cancellation that comes once the
+  turn answered changes nothing: the answer stands.
+- **The watch.** A turn closes itself only if its code runs to the end. For the turns that
+  don't (killed, out of retries), the companion watches each turn it starts, holding no
+  process, and closes it at once if it failed. A watch lasts an hour at most, then a new one
+  takes over while the turn is still answered. The next turn's start also closes a turn
+  before it that never closed.
+- **Not covered: waits started outside `chat`.** A handler of your own that calls a
+  framework's `prompt` with a `signal` tool is not a turn: if it is killed, its waits stay in
+  `pending` until a `signal` resolves them or `clear` forgets them.
+
+**What a follower sees.** The revision (`notifications`, `watch`, `sync`) increases at a
+turn's start, at each tool call's start and end (not for a `background` agent), at a turn's
+close (its own, its watch's, or the next turn's start), when a wait starts, is resolved or is
+forgotten, and at `clear`. So a follower that reads each new revision sees every turn begin,
+its tool calls, its end, and a killed turn go idle.
+
+Source: the library's
+[TURN-SEMANTICS.md](https://github.com/restatedev/sdk-sessions/blob/main/packages/agents/TURN-SEMANTICS.md)
+(not shipped in the npm package).
 
 So, for a UI:
 
