@@ -189,9 +189,9 @@ So, for a UI:
 
 The library's scripted test models are not published, so test in layers:
 
-1. **Tool logic** as plain functions: put what a tool's `run` does in a function that takes
-   `ctx.db` (or a database from `@restatedev/sessions/internal`, see
-   [session-sql.md](session-sql.md)) and test it without a model.
+1. **Tool logic** without a model: put what a tool's `run` does in a function that takes
+   `ctx.db`, call it from a handler of the object too, and test that handler against a
+   Restate server on this machine ([session-sql.md](session-sql.md), "Testing SQL").
 2. **The agent end to end**, against a Restate server on this machine with a real model key:
    send messages with curl or the client, and read `messages` and `status`.
 3. **Through a crash:** kill the app's process while a tool runs (a tool that waits a few

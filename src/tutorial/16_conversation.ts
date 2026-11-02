@@ -1,0 +1,49 @@
+/**
+ * 16 · Appendix: more than a chat
+ *
+ * `pi.chat()` answers messages. For anything else you want to do with the
+ * conversation, `pi.withPi(ctx, options, work)` hands `work` the same
+ * conversation `chat` uses: here, a handler that compacts it (the model
+ * summarizes it, so later turns send fewer tokens), and one that starts it
+ * over, keeping only a note you give it.
+ *
+ * Both are handlers of the wallet, so they wait for the message being
+ * answered, and run one at a time with the messages. A crash runs them
+ * again, which is harmless: compacting again only shortens the conversation
+ * further, and starting over again with the same note ends the same.
+ *
+ *   curl localhost:8080/wallet16/alice/chat -d 'I am saving up for a bike, 600, by June.'
+ *   curl localhost:8080/wallet16/alice/compact                                # shorter, same memory
+ *   curl localhost:8080/wallet16/alice/chat -d 'What am I saving for?'        # still the bike
+ *   curl localhost:8080/wallet16/alice/startOver --json '"Alice now saves for a laptop."'
+ *   curl localhost:8080/wallet16/alice/chat -d 'What am I saving for?'        # the laptop
+ */
+import { sessionObject } from '@restatedev/agents';
+import * as pi from '@restatedev/agents/pi';
+
+// The same options for every handler that talks to the model.
+const options: pi.Options = { system: "You are the assistant of the user's wallet. Keep your answers short." };
+
+const wallet = sessionObject({
+  name: 'wallet16',
+  handlers: {
+    chat: pi.chat(options),
+
+    compact: async (ctx) =>
+      pi.withPi(ctx, options, async ({ conversation, context }) => {
+        const root = await conversation();
+        await root.compact(undefined, context);
+        await root.waitForIdle(context);
+      }),
+
+    startOver: async (ctx, note?: string) =>
+      pi.withPi(ctx, options, async ({ conversation, context }) => {
+        await (await conversation()).reset(note || undefined, context);
+      }),
+  },
+  views: {
+    messages: pi.messages(),
+  },
+});
+
+export const services = [wallet];

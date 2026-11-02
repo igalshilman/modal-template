@@ -26,7 +26,7 @@ import * as l12 from './12_tool_writes.ts';
 import * as l13 from './13_restate_tools.ts';
 import * as l14 from './14_approval.ts';
 import * as l15 from './15_subagents.ts';
-import * as l16 from './16_pi_durable.ts';
+import * as l16 from './16_conversation.ts';
 
 export const tutorial = [
   // Part 1 · A database per key

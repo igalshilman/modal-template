@@ -149,28 +149,10 @@ short.
   violation meaning "already exists".
 - A database past 10 GiB fails a write with "database or disk is full", also terminal.
 
-## Testing SQL without a Restate server
+## Testing SQL
 
-The engine runs in memory through `@restatedev/sessions/internal` (meant for libraries and
-tests). Save this as a scratch `.mjs` file, and run it with `node` from the repository's root:
-
-```js
-import { createRequire } from 'node:module';
-const require = createRequire(process.cwd() + '/package.json');
-const { open, asDatabase } = await import(require.resolve('@restatedev/sessions/internal'));
-
-const kv = new Map();
-const store = {
-  get: async (k) => kv.get(k),
-  set: (k, v) => kv.set(k, v),
-  clear: (k) => kv.delete(k),
-  sync: async () => {},
-};
-const db = asDatabase(await open('scratch/key', store)); // as a handler's ctx.db, without the schema steps
-
-await db.execute('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)');
-console.log(await db.query("INSERT INTO t (v) VALUES ('x') RETURNING id"));
-```
-
-This checks SQL and transaction behaviour. It doesn't run the object's `schema`, retries or
-views: for those, run the app against a Restate server and call it (deploying-on-modal).
+Test SQL through the object, against a Restate server on this machine (deploying-on-modal):
+call the handler that runs it, then a view that reads what it wrote. That runs the
+object's `schema`, its transactions and its retries as they will run deployed. Use only
+the public API (`ctx.db`, `restate.Database`): don't import the package's internal
+modules or open its storage yourself.
