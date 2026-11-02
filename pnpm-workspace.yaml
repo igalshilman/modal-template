@@ -1,0 +1,7 @@
+# pnpm's settings (one package, not a workspace).
+# Dependencies whose install scripts run (pnpm refuses the others' by default).
+allowBuilds:
+  '@google/genai': true
+  protobufjs: true
+# Restate's packages as soon as they are released, not a day later (pnpm's default minimum age).
+minimumReleaseAge: 0

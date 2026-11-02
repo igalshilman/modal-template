@@ -1,0 +1,27 @@
+{
+  "name": "modal-template",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Restate application on Modal, connected to Restate Cloud: the sessions tutorial, a wallet per user, from a SQL database per key to agents",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.4.0",
+    "@earendil-works/pi-ai": "1.4.0",
+    "@earendil-works/pi-durable": "1.4.0",
+    "@restatedev/agents": "0.1.0",
+    "@restatedev/sessions": "0.1.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.27.0"
+}

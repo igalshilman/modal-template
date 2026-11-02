@@ -1,0 +1,6 @@
+node_modules/
+# Your keys (see restate.env.example).
+restate.env
+.env
+.env.*
+.DS_Store
