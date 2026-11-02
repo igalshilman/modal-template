@@ -32,9 +32,9 @@ Send a request from the [playground](https://cloud.restate.dev/to/overview?servi
 one container, with your keys from a Modal secret:
 
 ```sh
-pip install modal python-dotenv && modal setup                                        # once
-modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY}       # once
-modal deploy modal/on_modal.py                                                        # runs the app
+pip install modal python-dotenv && modal setup
+modal secret create restate-template RESTATE_CONNECT_KEY=${RESTATE_CONNECT_KEY}
+modal deploy modal/on_modal.py
 ```
 
 Register `connect://wallet-v1` as above, and send requests the same way.
