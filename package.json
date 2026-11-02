@@ -19,6 +19,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@restatedev/restate-sdk-clients": "1.18.2",
     "@types/node": "24.19.2",
     "oxfmt": "0.72.0",
     "oxlint": "1.87.0",

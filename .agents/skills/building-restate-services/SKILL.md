@@ -72,6 +72,10 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
   oxlint, oxfmt) and format with `pnpm format`.
 - To run it locally, connect it to Restate Cloud, or deploy it on Modal: the
   **deploying-on-modal** skill.
+- The examples in the references call a local server, `curl localhost:8080/…`. On Restate
+  Cloud, the same paths work at your environment's ingress
+  (`https://<environment id>.env.<region>:8080`) with `-H "Authorization: Bearer <ingress API key>"`,
+  or through the client with `RESTATE_INGRESS_KEY`: see deploying-on-modal, "Calling handlers".
 
 ## Step 3: load what the task needs
 

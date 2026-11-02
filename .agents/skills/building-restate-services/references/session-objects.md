@@ -70,6 +70,9 @@ What runs how often:
   curl localhost:8080/restate/invocation/orders/alice/place/order-1042/attach   # its result, by the key
   ```
 
+  (On Restate Cloud: your ingress URL instead of `localhost:8080`, and
+  `-H "Authorization: Bearer <ingress API key>"`; see the deploying-on-modal skill.)
+
   From code: `client.place(input, clients.rpc.opts({ idempotencyKey: 'order-1042' }))`, or
   `clients.rpc.sendOpts({ idempotencyKey })` for a one-way send.
 

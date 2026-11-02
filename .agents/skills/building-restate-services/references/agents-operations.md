@@ -1,8 +1,10 @@
 # Operating agents: calling, following, failing, testing, deploying
 
 Companion to [restate-agents.md](restate-agents.md). The examples use a local Restate
-server's ingress (`localhost:8080`); with Restate Cloud, use the playground, or a client
-with an ingress key (`RESTATE_INGRESS_KEY`).
+server's ingress (`localhost:8080`). On Restate Cloud, the same requests go to your
+environment's ingress (`https://<environment id>.env.<region>:8080`) with
+`-H "Authorization: Bearer <ingress API key>"`, or through the client with
+`RESTATE_INGRESS_KEY` (the deploying-on-modal skill, "Calling handlers").
 
 ## Calling an agent
 

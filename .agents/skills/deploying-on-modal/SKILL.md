@@ -55,6 +55,58 @@ After changing the services, restart the app and register again with `--force`
    `@restatedev/restate-sdk-clients` and an ingress key (`RESTATE_INGRESS_KEY`, from
    **Configure SDK -> Create ingress key**): `clients.connect()` reads it.
 
+## Calling handlers: a local server or Restate Cloud
+
+Every example in these skills calls `http://localhost:8080`, a local server's ingress. On
+Restate Cloud the paths, bodies and headers are the same, at your environment's ingress
+URL, with an ingress key's API key as a bearer token:
+
+|                | Local server                                        | Restate Cloud                                                                                            |
+| -------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Ingress        | `http://localhost:8080`                             | `https://<environment id>.env.<region>:8080`, such as `https://201kab12cd34ef.env.eu.restate.cloud:8080` |
+| Authentication | None                                                | `Authorization: Bearer <API key>`, of an ingress key (**Configure SDK -> Create ingress key**)           |
+| UI and admin   | `http://localhost:9070`                             | The Cloud UI (https://cloud.restate.dev)                                                                 |
+| The client     | `clients.connect({ url: 'http://localhost:8080' })` | `clients.connect()`, which reads the URL and the API key from `RESTATE_INGRESS_KEY`                      |
+
+The Cloud UI shows the environment's ingress URL and the ingress key's API key. The URL
+above is a placeholder: use yours.
+
+```sh
+# A local server
+curl localhost:8080/notes/alice/add --json '"Buy milk"'
+curl localhost:8080/notes/alice/list
+
+# Restate Cloud: the same requests, at your ingress, with your ingress API key
+RESTATE_INGRESS_URL=https://201kab12cd34ef.env.eu.restate.cloud:8080   # placeholder: yours from the Cloud UI
+curl "$RESTATE_INGRESS_URL/notes/alice/add" -H "Authorization: Bearer $RESTATE_INGRESS_API_KEY" --json '"Buy milk"'
+curl "$RESTATE_INGRESS_URL/notes/alice/list" -H "Authorization: Bearer $RESTATE_INGRESS_API_KEY"
+```
+
+Everything else in the examples carries over as it is: `/send`, `/restate/invocation/…/attach`,
+and the `idempotency-key` header.
+
+From code, with `@restatedev/restate-sdk-clients`, a dev dependency of this repository: the
+app doesn't need it, and the Modal image installs production dependencies only.
+
+```ts
+// scripts/try.ts: `node --env-file=.env scripts/try.ts`, with RESTATE_INGRESS_KEY in .env
+import * as clients from '@restatedev/restate-sdk-clients';
+
+const restate = process.env.RESTATE_INGRESS_KEY
+  ? clients.connect() // Restate Cloud: URL and API key from RESTATE_INGRESS_KEY
+  : clients.connect({ url: 'http://localhost:8080' }); // a local server
+// The handlers' types, each with its context first, as the object defines them.
+type Notes = { add(ctx: unknown, note: string): Promise<void>; list(ctx: unknown): Promise<string[]> };
+const alice = restate.objectClient<Notes>({ name: 'notes' }, 'alice');
+
+await alice.add('Buy milk');
+console.log(await alice.list());
+```
+
+`RESTATE_INGRESS_KEY` (for calling) and `RESTATE_CONNECT_KEY` (for the app to connect) are
+different keys, both from **Configure SDK**. Keep them in `.env`, which `.gitignore`
+excludes; `node --env-file=.env` loads it.
+
 The deployment's name, `name` in `restate.connect` (`notes-v1`), identifies this version of
 the code; replicas of one version share it. For a new version (services or handlers added,
 changed or removed), use a new name (`notes-v2`) and register it. Restate sends new

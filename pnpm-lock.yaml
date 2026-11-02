@@ -27,6 +27,9 @@ importers:
         specifier: 4.6.5
         version: 4.6.5
     devDependencies:
+      '@restatedev/restate-sdk-clients':
+        specifier: 1.18.2
+        version: 1.18.2
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
