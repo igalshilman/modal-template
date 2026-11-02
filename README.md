@@ -1,13 +1,33 @@
-# A Restate application on Modal
+# Session objects and agents on Modal
 
-A Restate application using SQLite running on [Modal](https://modal.com), connected to
-[Restate Cloud](https://cloud.restate.dev). A tutorial comes with it, off by default (see
-[The tutorial](#the-tutorial)).
+A template for a [Restate](https://restate.dev) application that runs on
+[Modal](https://modal.com) and connects to [Restate Cloud](https://cloud.restate.dev). It
+is built on two libraries for the Restate TypeScript SDK:
+
+- **[`@restatedev/sessions`](https://github.com/restatedev/sdk-sessions/blob/main/packages/sessions/README.md)**
+  gives every key of a virtual object its own SQL database. We call these _session
+  objects_, or _sessions_ for short. The database lives in Restate's state, so there is
+  no separate database to run.
+- **[`@restatedev/agents`](https://github.com/restatedev/sdk-sessions/blob/main/packages/agents/README.md)**
+  runs AI agents inside sessions, with each conversation stored in its session's
+  database. It supports pi, OpenCode, LangGraph, Claude and the DeepSeek Harness.
+
+The app ([`src/app.ts`](src/app.ts)) is a wallet per user, in one file. It connects out to
+Restate Cloud, so it needs no open port: on Modal, it is one always-on container. If you
+are new to sessions, [the tutorial](#the-tutorial) comes with it: a wallet built one idea
+per file, from a plain virtual object up to an assistant that pays your friends and asks
+before large transfers.
 
 ## Before you start
 
 Get the connect key of your Restate Cloud environment from
 [**Configure SDK -> Create connect key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
+
+The app connects to Restate Cloud with `restate.connect` (the end of
+[`src/app.ts`](src/app.ts)): it dials out to your environment, so it needs no open port
+and no public URL. It reads the key from `RESTATE_CONNECT_KEY`, and connects as the
+deployment `wallet-v1`, the name you register once (below). Run more copies under the same
+name, and Restate Cloud spreads the requests across them.
 
 ## Run it locally
 
@@ -25,7 +45,7 @@ in the Cloud UI (the application prints this link too), or with the CLI:
 npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://wallet-v1
 ```
 
-Send requests from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet).
+Send a request from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=wallet).
 
 To use a Restate server on your machine instead of Cloud, swap `restate.connect` for
 `restate.serve` in [`src/app.ts`](src/app.ts): its comment shows both.
@@ -44,16 +64,187 @@ modal deploy modal/on_modal.py
 Register `connect://wallet-v1` as above, and send requests the same way.
 `modal app logs restate-template` follows it.
 
+## Using client to send requests
+
+Get the ingress key of your Restate Cloud environment from
+[**Configure SDK -> Create ingress key**](https://cloud.restate.dev/to/developers/integration#configure-sdk),
+and send requests with `@restatedev/restate-sdk-clients`:
+
+```ts
+import * as clients from '@restatedev/restate-sdk-clients';
+
+const rs = clients.connect();
+const alice = rs.objectClient({ name: 'wallet' }, 'alice');
+console.log(await alice.deposit(10)); // 10, then 20 the next time
+```
+
+## Session objects
+
+A session object is a virtual object with a `schema` and a database, `ctx.db`. Each key
+(`alice`, `bob`, …) gets its own SQLite-compatible database of up to 10 GiB. This one keeps
+notes per user
+([`examples/basic/notes.ts`](https://github.com/restatedev/sdk-sessions/blob/main/packages/examples/basic/notes.ts)):
+
+```ts
+import * as restate from '@restatedev/sessions';
+
+const notes = restate.sessionObject({
+  name: 'notes',
+  // Creates each key's database. Each statement runs once per key; append new ones later as needed.
+  schema: ['CREATE TABLE notes (text TEXT NOT NULL)'],
+  handlers: {
+    add: async (ctx, note: string) => {
+      await ctx.db.execute('INSERT INTO notes (text) VALUES (?)', [note]);
+    },
+  },
+  views: {
+    /** A view only reads, so it can run while `add` is writing. */
+    list: async (ctx) => {
+      const rows = await ctx.db.query<{ text: string }>('SELECT text FROM notes ORDER BY rowid');
+      return rows.map(({ text }) => text);
+    },
+  },
+});
+```
+
+To serve it, add it to `services` in [`src/app.ts`](src/app.ts). The requests here go to a
+local Restate server's ingress; with Restate Cloud, send them from the playground or with a
+client:
+
+```sh
+curl localhost:8080/notes/alice/add --json '"Buy milk"'
+curl localhost:8080/notes/alice/list
+```
+
+Handlers run one at a time per key, and they are the only ones that write. Views can run at
+any time, even while a handler is running, and only read what has been committed.
+
+Each statement is durable once it returns. To commit several statements at once, put them
+in `ctx.db.transaction(tx => …)`. Messages you send with `tx.send` inside a transaction go
+out only if it commits.
+
+Session handlers don't replay a journal after a failure. Restate simply runs the handler
+again from the start, against whatever the database holds by then. That means a handler
+should be safe to run twice, for example by recording a request or transfer id with its
+writes. The
+[`@restatedev/sessions` README](https://github.com/restatedev/sdk-sessions/blob/main/packages/sessions/README.md)
+covers this, and how the storage works.
+
+## Agents
+
+An agent is a session whose conversation is stored in its database. If the process
+crashes, or a tool waits a day for a person to answer, the agent picks up where it left
+off.
+
+Tools can be Restate itself. This support agent looks up orders with a service, waits for a
+manager to approve a refund, and runs the refund as a workflow
+([`examples/intermediate/support.ts`](https://github.com/restatedev/sdk-sessions/blob/main/packages/examples/intermediate/support.ts)):
+
+```ts
+const support = pi.agent({
+  name: 'support',
+  tools: [
+    call(orders, 'status', {
+      description: 'The status of an order.',
+      input: z.object({ order: z.string() }),
+    }),
+    signal('approval', {
+      description: "Wait for a manager to decide on a refund. Answers with the manager's decision.",
+    }),
+    workflow(refund, {
+      description: 'Refund an order. Only once a manager approved it.',
+      input: z.object({ order: z.string(), amount: z.number() }),
+    }),
+  ],
+});
+```
+
+```sh
+curl localhost:8080/support/alice/chat -d 'Order 103 arrived broken, can I get my $30 back?'
+curl localhost:8080/support/alice/signal --json '{"name": "approval", "value": "approved"}'
+```
+
+To serve agents, add them to `services` together with `signals` from `@restatedev/agents`,
+which their `signal` tools are answered through (as
+[`src/tutorial/index.ts`](src/tutorial/index.ts) does). The models need their API key in the
+environment, such as `OPENAI_API_KEY`: on Modal, add it to the secret.
+
+The same agent runs on any of the supported frameworks. See
+[`@restatedev/agents`](https://github.com/restatedev/sdk-sessions/blob/main/packages/agents/README.md)
+and [the examples](https://github.com/restatedev/sdk-sessions/blob/main/packages/examples/README.md).
+
+### Your own tools and tables
+
+A tool is a function that gets the session's `ctx`, so it can use the same database as the
+agent. This assistant stores what it learns about each user in a `facts` table next to the
+conversation, and exposes the table through a view that a profile page could call
+([`examples/basic/memory.ts`](https://github.com/restatedev/sdk-sessions/blob/main/packages/examples/basic/memory.ts)).
+It is defined with `sessionObject` from `@restatedev/agents`: `restate.sessionObject` plus
+the handlers every agent has (`status`, `stop`, `signal` and a few more):
+
+```ts
+import { sessionObject, tool } from '@restatedev/agents';
+import * as pi from '@restatedev/agents/pi';
+import { z } from 'zod';
+
+const remember = tool({
+  name: 'remember',
+  description: 'Remember a fact about the user, for this conversation and later ones.',
+  input: z.object({ fact: z.string() }),
+  run: async ({ fact }, { ctx }) => {
+    await ctx.db.execute('INSERT OR IGNORE INTO facts (fact) VALUES (?)', [fact]);
+    return `Remembered: ${fact}`;
+  },
+});
+
+const recall = tool({
+  name: 'recall',
+  description: 'Everything remembered about the user.',
+  input: z.object({}),
+  run: async (_input, { ctx }) => {
+    const rows = await ctx.db.query<{ fact: string }>('SELECT fact FROM facts ORDER BY rowid');
+    return rows.map(({ fact }) => fact);
+  },
+});
+
+const assistant = sessionObject({
+  name: 'assistant',
+  // Your own table, in each user's database next to the agent's tables.
+  schema: ['CREATE TABLE facts (fact TEXT PRIMARY KEY)'],
+  handlers: {
+    chat: pi.chat({
+      system: 'You are a helpful assistant. Remember what you learn about the user, and recall it when it helps.',
+      tools: [remember, recall],
+    }),
+  },
+  views: {
+    messages: pi.messages(),
+
+    /** What the assistant knows about the user. A view, so it answers even while the agent is busy. */
+    facts: async (ctx) => {
+      const rows = await ctx.db.query<{ fact: string }>('SELECT fact FROM facts ORDER BY rowid');
+      return rows.map(({ fact }) => fact);
+    },
+  },
+});
+```
+
+```sh
+curl localhost:8080/assistant/alice/chat -d 'I am vegetarian, and I live in Lisbon.'
+curl localhost:8080/assistant/alice/chat -d 'Suggest a restaurant for tonight.'
+curl localhost:8080/assistant/alice/facts
+```
+
 ## The tutorial
 
 Each lesson in [`src/tutorial`](src/tutorial) is one file: the wallet so far, plus one new
 idea, explained in the comment at its top with the requests to try it.
 [`src/tutorial/index.ts`](src/tutorial/index.ts) collects them all into one array,
-`tutorial`. Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so
-they live side by side in one deployment, next to the wallet.
+`tutorial`. Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so they
+live side by side in one deployment, next to the wallet.
 
-The tutorial is off by default. To try it, include it in [`src/app.ts`](src/app.ts), as
-the comment at its bottom shows:
+The tutorial is off by default. To try it, include it in [`src/app.ts`](src/app.ts), as the
+comment at its bottom shows:
 
 ```ts
 import { tutorial } from './tutorial/index.ts';
@@ -88,24 +279,25 @@ RESTATE_CONNECT_KEY=… OPENAI_API_KEY=… --force`).
 | **Appendix**                                              |                                                               |
 | [`16_pi_durable.ts`](src/tutorial/16_pi_durable.ts)       | What `pi.prompt` does, written out with pi-durable            |
 
-The lessons' requests use `curl localhost:8080/...`, a local Restate server's ingress. With
-Restate Cloud, use your environment's ingress URL and an ingress key instead, or a client
-(below).
+## Repository layout
 
-## Using client to send requests
+- [`src/app.ts`](src/app.ts): the application, the services it serves and how it reaches
+  Restate (Restate Cloud, or a local server).
+- [`src/tutorial`](src/tutorial): the tutorial's lessons, off by default.
+- [`modal/on_modal.py`](modal/on_modal.py): the Modal app, which builds the image and runs
+  `src/app.ts` in one always-on container.
 
-Get the ingress key of your Restate Cloud environment from
-[**Configure SDK -> Create ingress key**](https://cloud.restate.dev/to/developers/integration#configure-sdk).
+## Requirements
 
-Then send requests using `@restatedev/restate-sdk-clients`:
+- Restate Cloud, or a Restate server 1.8 or later. To run one locally in Docker:
 
-```ts
-import * as clients from '@restatedev/restate-sdk-clients';
+  ```sh
+  docker run --rm -p 8080:8080 -p 9070:9070 --add-host=host.docker.internal:host-gateway \
+    ghcr.io/restatedev/restate:1.8.0
+  ```
 
-const rs = clients.connect();
-const alice = rs.objectClient({ name: 'wallet' }, 'alice');
-console.log(await alice.deposit(10)); // 10, then 20 the next time
-```
+- Node 24 or later (the code is TypeScript that Node runs directly), and pnpm.
+- To deploy: a Modal account, and Python with `pip install modal python-dotenv`.
 
 ## Development
 
@@ -114,3 +306,6 @@ pnpm typecheck   # tsc
 pnpm lint        # tsc, oxlint (type-aware) and oxfmt --check
 pnpm format      # oxfmt
 ```
+
+The libraries themselves, their examples and tests are in
+[restatedev/sdk-sessions](https://github.com/restatedev/sdk-sessions).
