@@ -87,7 +87,8 @@ modal deploy modal/on_modal.py
 Register `connect://notes-v1` as above. `modal app logs restate-template` follows the app.
 Model API keys (such as `OPENAI_API_KEY`) go in the same secret.
 
-[^push]: **Why not "push" to Modal?** We suspect an edge case with long-lived HTTP/2 connections
+[^push]:
+    **Why not "push" to Modal?** We suspect an edge case with long-lived HTTP/2 connections
     between Restate Cloud and Modal, possibly an interaction between HTTP clients and API
     gateways or load balancers: longer-running functions sometimes get stuck. While we
     investigate, and to save you the friction, your code connects to Restate Cloud instead
