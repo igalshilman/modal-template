@@ -178,7 +178,8 @@ ctx.cancel(invocationId); // handlers and views
   the same call several times, add what tells them apart. Restate remembers keys for the
   target's idempotency retention, a day by default.
 - Sends in a transaction (`tx.send`) go out right after it commits, and never if it rolls
-  back, each exactly once, even across crashes:
+  back, each exactly once, even across crashes. `tx.send` takes the same options as
+  `ctx.send`, a `delay` included: `tx.send(target, key, { delay: { hours: 24 } }).handler(input)`.
 
 ```ts
 await ctx.db.transaction(async (tx) => {

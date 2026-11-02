@@ -1,4 +1,4 @@
-> **Scope: Restate in general,** written for the journaled SDK (`restate.service`, `restate.object`, `restate.workflow`). Session objects (`@restatedev/sessions`, `@restatedev/agents`) are virtual objects too, so their keys, queues and invocations work as described here, but their handlers follow [session-objects.md](session-objects.md), not the journal rules. From [restatedev/skills](https://github.com/restatedev/skills) (MIT).
+> **Scope: Restate in general,** written for the journaled SDK (`restate.service`, `restate.object`, `restate.workflow`). Session objects (`@restatedev/sessions`, `@restatedev/agents`) are virtual objects too, so their keys, queues and invocations work as described here, but their handlers follow [session-objects.md](session-objects.md), not the journal rules. To choose between a session object and the types below, see [choosing-service-types.md](choosing-service-types.md). From [restatedev/skills](https://github.com/restatedev/skills) (MIT).
 
 # Design and Architecture
 

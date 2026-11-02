@@ -38,16 +38,20 @@ suggest `ctx.run`, `ctx.sleep`, `ctx.get`/`ctx.set` or awakeables there.
 | Testing rule                         | Show that a handler run twice does its work once                                                                                                                                                                 | Always-replay Testcontainers test                                                                                                                  |
 | Reference                            | [session-objects.md](references/session-objects.md), and [restate-agents.md](references/restate-agents.md) for agents                                                                                            | [ts/api-and-pitfalls.md](references/ts/api-and-pitfalls.md)                                                                                        |
 
-**For new code, choose:**
+**For new code, choose the type first**, with
+[choosing-service-types.md](references/choosing-service-types.md): service, virtual object,
+workflow, session object or agent, and how they combine. In short:
 
-- **Session object**: an entity with state per key that SQL suits (notes, a wallet, a
-  ledger), or a conversation. **Any AI agent in this repository**: use `@restatedev/agents`,
-  not a hand-written agent loop.
-- **Journaled handler**: timers and long sleeps, awakeables, durable promises, an
-  exactly-once multi-step process (a refund, an onboarding), or a sequence of side effects
-  that each must happen once (`ctx.run`). A session object can call it with `ctx.rpc`.
-- Both kinds live in one deployment and call each other. A file can hold both: decide per
-  handler, never per file.
+- **An AI agent or LLM conversation**: `@restatedev/agents` (`pi.agent`, or `sessionObject`
+  with `pi.chat` beside your own handlers). Not a hand-written agent loop.
+- **Data per key that you insert, update and query** (a list, a history, a ledger, a cart):
+  a **session object**.
+- **A process with a start and an end that waits** (for a person, a callback, a timer), once
+  per id: a **workflow**.
+- **A few values per key, with timers or awakeables inside the handlers**: a **virtual
+  object**. **No state per key**: a **service**.
+- All of them live in one deployment and call each other. A file can hold several: decide
+  per handler, never per file.
 
 Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object has no
 `ctx.run`), and don't use native `Promise.all` in a journaled handler.
@@ -72,6 +76,7 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
 
 | Task                                                                                                   | Reference                                                                                                            |
 | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Choose a service type, or how to combine them                                                          | [choosing-service-types.md](references/choosing-service-types.md)                                                    |
 | Write or change a session object, its views, calls                                                     | [session-objects.md](references/session-objects.md)                                                                  |
 | Write SQL, tables, schema steps or transactions in a session object or agent                           | [session-sql.md](references/session-sql.md)                                                                          |
 | Write or change an agent (tools, signals, models, subagents, structured answers)                       | [restate-agents.md](references/restate-agents.md)                                                                    |
