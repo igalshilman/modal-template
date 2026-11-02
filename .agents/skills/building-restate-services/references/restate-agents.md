@@ -3,7 +3,8 @@
 `@restatedev/agents` runs an agent of one of five frameworks (pi, OpenCode, LangGraph,
 Claude, the DeepSeek Harness) inside a Restate session object. The conversation lives in
 the object's SQL database. A crash, a restart, or a person who takes a day to approve
-changes nothing: each message is answered once, and each tool call is made once.
+changes nothing: each message is answered once, and Restate's own tools make each call
+once. Tools of your own need care: see "Tools that must not run twice".
 
 An agent **is a session object**, so [session-objects.md](session-objects.md) applies to it
 and to every handler you add to it: no journal replay, no `ctx.run`, `Promise.all` is fine,
@@ -85,8 +86,9 @@ framework's own (which describes its tools) for pi, OpenCode and DeepSeek.
 
 - pi, OpenCode and the DeepSeek Harness take any provider they know; LangGraph OpenAI's and
   Anthropic's (or any LangChain chat model object as `model`); Claude Anthropic's only.
-- A model that isn't `provider/model-id`, or another provider's for Claude, fails when the
-  agent is defined. A missing or wrong key, or a model the provider doesn't know, fails the
+- A model that isn't `provider/model-id`, or of a provider the framework doesn't take
+  (Claude: Anthropic only; LangGraph: OpenAI and Anthropic; DeepSeek: those pi-ai knows),
+  fails when the agent is defined. A missing or wrong key, or a model the provider doesn't know, fails the
   message at once with a terminal error (HTTP 424) that says what to check, rather than
   retrying.
 - The key goes in the environment: on Modal, in the Modal secret.
@@ -122,10 +124,10 @@ import { call, send, signal, subagent, tool, workflow } from '@restatedev/agents
 
 A crash can cut a tool call off. What happens next depends on the framework:
 
-| Framework                  | After a crash cut a tool call off                                                              | So a tool that changes something outside                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| pi, LangGraph, Claude      | The same tool call runs again, **with the same `callId`**                                      | Passes `idempotencyKey` (`<invocation id>:<call id>`) on, or records `callId` with its writes            |
-| OpenCode, DeepSeek Harness | The model is told the call was interrupted, and makes **a new tool call, with a new `callId`** | Also takes the id of the call it retries as input (`retryOf`), and tells the model so in its description |
+| Framework                  | After a crash cut a tool call off                                                              | So a tool that changes something outside                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| pi, LangGraph, Claude      | The same tool call runs again, **with the same `callId`**                                      | Passes `idempotencyKey` (`<invocation id>:<call id>`) on: to the API, or as the id it records in `ctx.db` |
+| OpenCode, DeepSeek Harness | The model is told the call was interrupted, and makes **a new tool call, with a new `callId`** | Also takes the id of the call it retries as input (`retryOf`), and tells the model so in its description  |
 
 Restate's own tools (`call`, `send`, `workflow`, `subagent`, `signal`) need nothing: made
 again with the same input, the call is the one the cut-off call made. For a tool of your own
@@ -145,6 +147,7 @@ const transfer = tool({
   }),
   run: async ({ from, to, amount, retryOf }, { ctx, callId }) => {
     const id = retryOf ?? callId; // a retry of an earlier call is that call's transfer
+    // The agent's schema has the table; an outside API would get `id` as its idempotency key.
     await ctx.db.execute('INSERT OR IGNORE INTO transfers (id, src, dst, amount) VALUES (?, ?, ?, ?)', [
       id,
       from,
@@ -249,7 +252,8 @@ other kinds (a queue, a schedule): `deliver(ctx, agent, key, text, { idempotency
 - [ ] The framework's packages are installed, and the model's API key is in the environment
       (and in the Modal secret, for a deployment)
 - [ ] Tools that change something outside are safe to repeat for their framework: the
-      `idempotencyKey` passed on, or `retryOf` for OpenCode and the DeepSeek Harness
+      `idempotencyKey` passed on (pi, LangGraph, Claude), or `retryOf` as well (OpenCode,
+      the DeepSeek Harness)
 - [ ] Permanent tool failures throw `TerminalError`, so the model gets the message
 - [ ] No handler or view of yours has a reserved name, and `messages` is a view
 - [ ] The agent answered a message through Restate (curl or the playground)

@@ -1,9 +1,10 @@
 # SQL and transactions in session objects
 
 Each key of a session object has its own SQLite-compatible database (Turso's engine), as
-`ctx.db`. Write **SQLite SQL**, not Postgres or MySQL. Everything below was checked against
-the engine of `@restatedev/sessions` 0.1.0. When in doubt about a feature, test it the same
-way (see the end of this page) rather than assuming SQLite or Postgres behaviour.
+`ctx.db`. Write **SQLite SQL**, not Postgres or MySQL. The SQL, parameters and transaction
+behaviour below were checked against the engine of `@restatedev/sessions` 0.1.0; the schema,
+view and size rules come from the package's README. When in doubt about a feature, test it
+the same way (see the end of this page) rather than assuming SQLite or Postgres behaviour.
 
 ## One database per key
 
@@ -42,7 +43,7 @@ const tuples = await ctx.db.values(sql, params?);   // rows as arrays, in column
 | `datetime('now')`, `unixepoch()`, `strftime(...)`, `DEFAULT CURRENT_TIMESTAMP`                | `NOW()`: no such function                                                                                                            |
 | `INSERT ... RETURNING id`, `last_insert_rowid()`, `changes()`                                 |                                                                                                                                      |
 | `INSERT OR IGNORE`, `INSERT OR REPLACE`, `ON CONFLICT(col) DO UPDATE SET n = n + excluded.n`  |                                                                                                                                      |
-| `json_extract`, `->>`, `json_each`, `json_object`, `json_group_array` (JSON stored as `TEXT`) | A `JSON`/`JSONB` column type with Postgres operators                                                                                 |
+| `json_extract`, `->>`, `json_each`, `json_object`, `json_group_array` (JSON stored as `TEXT`) | Postgres's `jsonb` operators and functions (`@>`, `?`, `jsonb_set`): not SQLite's (untested)                                         |
 | `WITH RECURSIVE`, window functions (`ROW_NUMBER() OVER (...)`), views, triggers               |                                                                                                                                      |
 | `CREATE INDEX`, `UNIQUE`, partial indexes (`... WHERE n > 0`), `STRICT` tables                |                                                                                                                                      |
 | `ALTER TABLE ... ADD COLUMN`, `RENAME COLUMN`, `DROP COLUMN`                                  |                                                                                                                                      |
@@ -88,7 +89,7 @@ const balance = await ctx.db.transaction(async (tx) => {
 });
 ```
 
-Rules, each checked:
+Rules (the first four, and reads seeing the body's writes, checked against the engine):
 
 - **Use `tx` inside the body.** A call to `ctx.db` there fails ("inside a transaction, use
   the transaction handle its body gets").

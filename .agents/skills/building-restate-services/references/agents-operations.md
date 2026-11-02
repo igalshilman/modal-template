@@ -93,15 +93,16 @@ first. A message sent before `clear` is answered, then forgotten too.
 - **Any other failure** (a crash, a network error, a tool's non-terminal error) fails the
   attempt, and Restate retries it: 50 ms later, doubling up to 10 s apart, for up to 100,000
   attempts (weeks). Each attempt resumes from the database: answered prompts aren't asked
-  again, stored tool calls aren't repeated. Change the policy with `options: { retryPolicy }`
+  again, completed tool calls aren't repeated (a cut-off one is: see "Tools that must not
+  run twice" in restate-agents.md). Change the policy with `options: { retryPolicy }`
   on your `sessionObject`.
 - An attempt that ends while its process lives on (suspended, abandoned) stops its work, a
   model request included; the next attempt continues the turn.
 - **A structured answer** (`output`) that doesn't parse is sent back once; then the message
   fails, terminally.
 - A failure that keeps retrying shows in Restate's UI (localhost:9070, or the Cloud UI) and
-  with the CLI (`restate invocations ls --json`): fix the cause (the key, the tool), or
-  cancel the invocation.
+  through the CLI (`restate search list invocations`, then `--json`): fix the cause (the key,
+  the tool), or cancel the invocation.
 
 ## Testing agents
 
@@ -112,8 +113,8 @@ The library's scripted test models are not published, so test in layers:
    [session-sql.md](session-sql.md)) and test it without a model.
 2. **The agent end to end**, against a Restate server on this machine with a real model key:
    send messages with curl or the client, and read `messages` and `status`.
-3. **Through a crash:** kill the app's process while a tool runs (a tool that sleeps makes it
-   easy), start it again, and check that the effect happened once and the answer came.
+3. **Through a crash:** kill the app's process while a tool runs (a tool that waits a few
+   seconds with a plain `setTimeout` makes it easy; there is no `ctx.sleep`), start it again, and check that the effect happened once and the answer came.
 
 ## Deploying
 

@@ -26,7 +26,7 @@ So, in a session object, **none** of the journaled-SDK rules apply:
 | `ctx.sleep`                                                             | Not available. For "later", a delayed send: `ctx.send(target, key, { delay: { minutes: 5 } })`           |
 | Awakeables, durable promises                                            | Not available. An agent waits with a `signal()` tool; otherwise put the wait in a journaled workflow     |
 | Add an always-replay Testcontainers test                                | Not applicable. Test what happens when an attempt runs twice                                             |
-| `ctx.serviceClient(x)` / `ctx.objectClient(x, key)`                     | `ctx.rpc(x, key?, options?)` and `ctx.send(...)`                                                         |
+| `ctx.serviceClient(x)` / `ctx.objectClient(x, key)`                     | `ctx.rpc(service, options?)`, `ctx.rpc(object, key, options?)`, and `ctx.send(...)` likewise             |
 
 What you must do instead: **make every handler safe to run twice.**
 
@@ -109,23 +109,12 @@ const notes = restate.sessionObject({
 
 ### The contexts
 
-```ts
-interface SessionContext {
-  key;
-  request;
-  db: Database;
-  rpc;
-  send;
-  cancel;
-} // handlers
-interface ViewContext {
-  key;
-  request;
-  db: DatabaseReader;
-  rpc;
-  cancel;
-} // views: no send
-```
+|                          | Handlers: `SessionContext`              | Views: `ViewContext`         |
+| ------------------------ | --------------------------------------- | ---------------------------- |
+| `ctx.key`, `ctx.request` | Yes                                     | Yes                          |
+| `ctx.db`                 | `Database`: reads, writes, transactions | `DatabaseReader`: reads only |
+| `ctx.rpc`, `ctx.cancel`  | Yes                                     | Yes                          |
+| `ctx.send`               | Yes                                     | No                           |
 
 `ctx.request.id` is the same on every attempt of an invocation. There is no `run`, `sleep`,
 `rand`, `date`, awakeable, promise, or key/value state.
@@ -145,15 +134,17 @@ rule, all tested: [session-sql.md](session-sql.md). Read it before writing SQL.
 - `query<T>(sql, params)` returns rows as objects keyed by column name. `get<T>` returns
   the first row or `undefined`. `values` returns rows as arrays. `execute` runs statements
   and returns nothing. `T` isn't checked at runtime.
-- An expression needs `AS` to get a column name. Integers above 2^53 come back as bigints,
-  and booleans as 0 or 1.
+- Give an expression an alias (`SELECT count(*) AS n`): without one, its column is named
+  after the expression's text. Integers above 2^53 come back as bigints, and booleans as 0
+  or 1.
 - Outside a transaction, each statement is a commit of its own: one round trip to Restate.
   `ctx.db.transaction(async (tx) => …)` commits its body together when it resolves, and
   rolls back if it rejects. Group writes in one transaction: it is cheaper and atomic.
 - Inside a transaction body, use `tx`: a call to `ctx.db` is refused. Calls to `ctx.db` run
   one at a time in the order you make them, even when awaited together.
-- An SQL error rejects with a `TerminalError` (a retry would fail the same way). So is a
-  `COMMIT` inside a transaction body, or returning with a transaction still open.
+- An SQL error rejects with a `TerminalError` (a retry would fail the same way). So does a
+  `COMMIT` or `ROLLBACK` inside a transaction body, which also closes the database for the
+  rest of the attempt, and returning with a transaction still open.
 
 ### The schema
 
@@ -197,8 +188,9 @@ transaction, with an idempotency key, and record its outcome in the transaction.
 Session objects sit beside journaled services, objects and workflows in one deployment,
 and call each other:
 
-- From a session object: `ctx.rpc(target, key).handler(input)`. Use journaled handlers for
-  timers, awakeables, durable promises, and multi-step side effects that need `ctx.run`.
+- From a session object: `ctx.rpc(service).handler(input)`, `ctx.rpc(object, key).handler(input)`.
+  Use journaled handlers for awakeables, durable promises, long waits, and multi-step side
+  effects that need `ctx.run`.
 - From a journaled handler: a session object is a virtual object, so call it with
   `ctx.objectClient(sessionObject, key).handler(input)`. The journaled handler follows the
   journaled rules.
@@ -206,7 +198,9 @@ and call each other:
 
 ## Not supported
 
-- Key/value state, `ctx.run`, timers and awakeables in a session object.
+- Key/value state, `ctx.run`, `ctx.sleep`, awakeables and durable promises in a session
+  object. Later work is a delayed `ctx.send`; a wait is an agent's `signal()` or a journaled
+  workflow.
 - Request/response deployments such as AWS Lambda: they suspend at every await, and for a
   session object a suspension is a restart. Run on a long-lived process: a server with
   `restate.serve`, or a container connected with `restate.connect`.
@@ -220,8 +214,9 @@ and call each other:
 - [ ] The SQL is SQLite's, and follows [session-sql.md](session-sql.md): `INTEGER PRIMARY KEY`,
       no `NOW()`, no `Date` or object parameters, no `COMMIT`/`ROLLBACK` in a transaction body,
       `transaction()` awaited, no reliance on foreign keys
-- [ ] No `ctx.run`, `ctx.sleep`, `ctx.get/set` or awakeables: those moved to a journaled
-      service, object or workflow that the session object calls
+- [ ] No `ctx.run`, `ctx.sleep`, `ctx.get/set` or awakeables: later work is a delayed
+      `ctx.send`, a wait is an agent's `signal()` or a journaled workflow, and a once-only
+      outside call is a journaled service that the session object calls
 - [ ] The SDK is imported from `@restatedev/sessions`, with no second SDK version added
 - [ ] The service is in `services` in `src/app.ts`, and was called through Restate (curl or
       the UI), including a request sent twice where it matters

@@ -55,10 +55,13 @@ After changing the services, restart the app and register again with `--force`
    `@restatedev/restate-sdk-clients` and an ingress key (`RESTATE_INGRESS_KEY`, from
    **Configure SDK -> Create ingress key**): `clients.connect()` reads it.
 
-The deployment's name is `name` in `restate.connect` (`notes-v1`). Replicas with the same
-name share its requests. Changing the name makes a new deployment, which must be registered
-again: do it when the services change in a way that the registered deployment cannot
-serve, and tell the user.
+The deployment's name, `name` in `restate.connect` (`notes-v1`), identifies this version of
+the code; replicas of one version share it. For a new version (services or handlers added,
+changed or removed), use a new name (`notes-v2`) and register it. Restate sends new
+invocations to the newest version, while invocations already running stay on theirs, and
+need that version still connected to finish. With one Modal container running only the new
+code, they can't: tell the user before switching. Versioning is in Restate's docs
+(https://docs.restate.dev).
 
 ## On Modal
 
@@ -74,9 +77,9 @@ modal app logs restate-template                                                 
 modal app stop restate-template                                                 # stop it
 ```
 
-Then register `connect://notes-v1` as above, once. Run `modal` commands from the
-repository's root: `import modal` in another directory may pick up the repository's own
-`modal/` folder instead of the package.
+Then register `connect://notes-v1` as above, once. Run the `modal` commands from the
+repository's root, as above. To check the Modal package itself, don't run
+`python -c "import modal"` from the root: Python finds the repository's `modal/` folder first.
 
 ### What goes into the image
 
