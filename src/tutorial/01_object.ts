@@ -7,8 +7,8 @@
  * wallet never handles two of them at once.
  *
  * Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so
- * all the lessons are served together. Include them in src/app.ts, as the
- * comment at its bottom shows, run it, and call any lesson through Restate:
+ * all the lessons are served together. Include them in src/app.ts (its comment
+ * shows how: two lines to uncomment), run it, and call any lesson through Restate:
  *
  *   curl localhost:8080/wallet01/alice/hello   # "Hello, alice!"
  */

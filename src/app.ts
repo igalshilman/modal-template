@@ -25,14 +25,11 @@ const notes = restate.sessionObject({
 });
 
 const services = [notes];
+// To try the tutorial (src/tutorial), comment out the line above and uncomment
+// the two below. Lessons 09 to 16 also need OPENAI_API_KEY.
+// import { tutorial } from './tutorial/index.ts';
+// const services = [notes, ...tutorial];
 
 restate.connect({ services, name: 'notes-v1' });
 // To run locally, with a Restate server on this machine, use this instead:
 // await restate.serve({ services, port: 9080 });
-
-// The tutorial (src/tutorial) is off by default: sixteen lessons, from a SQL
-// database per key to agents. To try it, serve its lessons next to the notes
-// (lessons 09 to 16 also need OPENAI_API_KEY):
-//
-//   import { tutorial } from './tutorial/index.ts';   // at the top
-//   const services = [notes, ...tutorial];

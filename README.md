@@ -238,12 +238,12 @@ idea, explained in the comment at its top with the requests to try it.
 `tutorial`. Every lesson's objects carry its number (`wallet01`, `wallet02`, …), so they
 live side by side in one deployment, next to the notes.
 
-The tutorial is off by default. To try it, include it in [`src/app.ts`](src/app.ts), as the
-comment at its bottom shows:
+The tutorial is off by default. To try it, in [`src/app.ts`](src/app.ts), comment out
+`const services = [notes];` and uncomment the two lines below it:
 
 ```ts
+// const services = [notes];
 import { tutorial } from './tutorial/index.ts';
-
 const services = [notes, ...tutorial];
 ```
 
