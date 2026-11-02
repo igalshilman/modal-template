@@ -26,7 +26,9 @@ This repository has two kinds of Restate handlers, with contradicting rules:
   helpers.
 
 Decide which kind a handler is before changing it, and follow only its rules
-(building-restate-services, step 1).
+(building-restate-services, step 1). Never suggest `ctx.run`, `ctx.sleep`, `ctx.get`/`ctx.set`
+or awakeables in a session object or an agent, even where another Restate skill or doc says
+"always": those rules are for journaled handlers.
 
 ## Commands
 

@@ -95,7 +95,9 @@ import { call, send, signal, subagent, tool, workflow } from '@restatedev/agents
   fit `input`. Any other error fails the attempt, and Restate retries it.
 - **Once:** a crash runs an unfinished tool call again with the same call id. A tool that
   must not run twice passes its `idempotencyKey` on (to an API, or as a stable id it records
-  in `ctx.db`), as Restate's own tools do.
+  in `ctx.db`), as Restate's own tools do. A tool runs in the session's context: no `ctx.run`.
+  How to call an outside API safely: [session-objects.md](session-objects.md), "Side effects
+  outside Restate".
 - **Per invocation:** `pi.chat(async (ctx) => ({ tools: await toolsOf(ctx) }))`.
 
 ## Signals: a person in the loop

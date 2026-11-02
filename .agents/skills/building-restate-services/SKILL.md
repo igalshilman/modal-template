@@ -17,6 +17,12 @@ port 8080, admin and UI on 9070), which retries them through crashes. This repos
 writing or changing a handler, decide which model it uses, and follow only that model's
 rules.**
 
+If another Restate skill is loaded too (such as the restatedev plugin's own
+`building-restate-services`), its mandatory rules, `ctx.run` around every side effect,
+`RestatePromise` instead of `Promise.all`, and always-replay tests, are for journaled
+handlers only. For session objects and agents, this skill's rules take precedence: never
+suggest `ctx.run`, `ctx.sleep`, `ctx.get`/`ctx.set` or awakeables there.
+
 ## Step 1: which model is this handler?
 
 |                                      | **Session object**                                                                                                                                                                                               | **Journaled handler**                                                                                                                              |

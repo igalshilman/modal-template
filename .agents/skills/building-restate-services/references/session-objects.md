@@ -23,7 +23,8 @@ So, in a session object, **none** of the journaled-SDK rules apply:
 | Combine with `RestatePromise.all/race`, never native `Promise.all`      | Native `Promise.all` and `Promise.race` are fine: the package drives every awaited promise with one loop |
 | No `Date.now()`, `Math.random()` or UUIDs: replay must be deterministic | There is no replay to break, but a new attempt computes new values, so never use them as idempotency ids |
 | State in `ctx.get`/`ctx.set`                                            | No key/value state: the database is the session's only state                                             |
-| `ctx.sleep`, awakeables, durable promises                               | Not available. Put them in a journaled object, service or workflow, and call it                          |
+| `ctx.sleep`                                                             | Not available. For "later", a delayed send: `ctx.send(target, key, { delay: { minutes: 5 } })`           |
+| Awakeables, durable promises                                            | Not available. An agent waits with a `signal()` tool; otherwise put the wait in a journaled workflow     |
 | Add an always-replay Testcontainers test                                | Not applicable. Test what happens when an attempt runs twice                                             |
 | `ctx.serviceClient(x)` / `ctx.objectClient(x, key)`                     | `ctx.rpc(x, key?, options?)` and `ctx.send(...)`                                                         |
 
@@ -39,6 +40,36 @@ What you must do instead: **make every handler safe to run twice.**
 - Writes that must succeed or fail together go in one `ctx.db.transaction`. A crash
   between two separate statements keeps the first one.
 - A send that must happen only if a write commits is a `tx.send` inside that transaction.
+
+### Side effects outside Restate (an HTTP API, an email, a payment)
+
+This is where the journaled habit of `ctx.run` comes back. Don't follow it:
+
+```ts
+// ❌ In a session object or an agent tool: there is no ctx.run (SessionContext has none, so it doesn't compile)
+await ctx.run('charge', () => stripe.paymentIntents.create(params));
+
+// ✅ Call it directly, and make a repeat harmless
+await stripe.paymentIntents.create(params, { idempotencyKey: `${ctx.request.id}:charge` });
+```
+
+Make the repeat harmless in one of three ways, the first that fits:
+
+1. **The API takes an idempotency key** (Stripe, most payment and email APIs): pass one that
+   is the same on every attempt: `` `${ctx.request.id}:<what>` ``, or in an agent tool, the
+   tool's own `idempotencyKey`.
+2. **Record the result in `ctx.db`**, keyed by a stable id, and check for it before calling.
+   A crash between the call and the record makes the call again, so this alone fits only
+   calls that are harmless to repeat (a lookup, a translation).
+3. **The call must happen once and the API can't deduplicate it**: move it into a journaled
+   `restate.service` whose handler wraps it in `ctx.run`, and call that from the session
+   object with an idempotency key:
+   ``await ctx.rpc(payments, { idempotencyKey: `${ctx.request.id}:charge` }).charge(params)``
+   (a service takes no key; an object's is `ctx.rpc(target, key, options)`). `ctx.run` lives
+   in that journaled service, never in the session object.
+
+Throw a `TerminalError` for failures a retry can't fix (a 4xx, a declined card), and let
+other errors throw, so Restate retries the attempt.
 
 ## Defining one
 
