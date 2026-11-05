@@ -71,7 +71,7 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   `subagent`), and 16 an `Agent` of the SDK of your own, with handoffs. Read the closest
   lesson before writing similar code. A lesson's file name starts with its number, so `src/tutorial/__init__.py`
   imports it with `importlib`; add a new lesson to `LESSONS` there.
-- Check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
+- From `python/`: run with `uv run src/app.py`; check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
   and format with `uv run ruff format`.
 - To run it locally, connect it to Restate Cloud, or deploy it on Modal: the
   **deploying-on-modal** skill.
@@ -175,7 +175,7 @@ assistant = openai.agent(
 - Tools: `@tool` for your own functions (typed parameters, docstring); `call`, `send`
   (with `delay=`), `workflow`, `subagent` and `wait_for_signal`, built on Restate, work with
   every framework. A tool may run again after a crash mid-call: make it safe to run twice
-  (`ToolCall.idempotency_key`).
+  (a tool function's `idempotency_key` parameter).
 - Built-in handlers and views of every agent: `chat` (takes plain text: `curl -d 'Hi'`),
   `messages`, `status`, `pending`, `signal`, `stop`, `clear`, `sync`, `watch`,
   `notifications`. These names are reserved.

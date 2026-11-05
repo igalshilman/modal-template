@@ -4,7 +4,7 @@ The Restate app on Modal, connected to Restate Cloud.
 One container runs src/app.ts, which connects to Restate Cloud with
 `restate.connect`. Its keys (RESTATE_CONNECT_KEY, and OPENAI_API_KEY if you
 include the tutorial) are a Modal secret, created once from restate.env (see
-README.md).
+README.md). Run the commands from typescript/, the project's directory:
 
     pip install modal python-dotenv && modal setup                          # once
     modal secret create restate-template --from-dotenv restate.env          # once

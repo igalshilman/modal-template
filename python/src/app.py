@@ -10,6 +10,8 @@ import asyncio
 import restate
 from restate import sessions
 
+# from tutorial import tutorial  # the tutorial: see `services` below
+
 notes = sessions.SessionObject(
     "notes",
     # Creates each key's database. Each step runs once per key; append new ones later as needed.
@@ -29,8 +31,8 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
 
 
 services: list[restate.VirtualObject | restate.Service | restate.Workflow] = [notes]
-# To try the tutorial (src/tutorial), uncomment the two lines below. Lessons 09 to 16 also need OPENAI_API_KEY.
-# from tutorial import tutorial
+# To try the tutorial (src/tutorial), uncomment the line below and the import of `tutorial` at
+# the top. Lessons 09 to 16 also need OPENAI_API_KEY.
 # services += tutorial
 
 if __name__ == "__main__":

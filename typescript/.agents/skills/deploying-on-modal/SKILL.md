@@ -10,7 +10,8 @@ description: >
 
 # Run and deploy on Modal
 
-The app is `src/app.ts`. It runs in one of three ways, chosen by its last lines:
+The app is `src/app.ts`. Run every command from `typescript/`, the project's directory. The
+app runs in one of three ways, chosen by its last lines:
 
 | Where                                          | `src/app.ts` uses                                               | Who calls whom                             |
 | ---------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------ |

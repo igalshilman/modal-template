@@ -72,7 +72,7 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
   before writing similar code. If `src/examples/` exists, it has agents, one per file.
 - Import the SDK from `@restatedev/sessions` (it re-exports `@restatedev/restate-sdk` at the
   version it pins). Don't add another `@restatedev/restate-sdk` version.
-- Node 24 runs the TypeScript directly: `node src/app.ts`. Check with `pnpm lint` (tsc,
+- From `typescript/`: Node 24 runs the TypeScript directly, `node src/app.ts`. Check with `pnpm lint` (tsc,
   oxlint, oxfmt) and format with `pnpm format`.
 - To run it locally, connect it to Restate Cloud, or deploy it on Modal: the
   **deploying-on-modal** skill.

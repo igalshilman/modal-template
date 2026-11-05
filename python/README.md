@@ -172,5 +172,5 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
 
 **Tutorial:** [`src/tutorial`](src/tutorial), one idea per file: a database per key (01–04),
 changes that happen once (05–08), agents (09–15), and an `Agent` of your own with handoffs
-(16). To run it, uncomment the two lines below `services = [notes]` in
+(16). To run it, uncomment `services += tutorial` and the import of `tutorial` in
 [`src/app.py`](src/app.py). Lessons 09–16 need `OPENAI_API_KEY`.
