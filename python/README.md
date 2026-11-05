@@ -170,6 +170,13 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
 - No journal replay: after a failure the handler runs again from the start, so make it safe
   to run twice (for example, record `ctx.request.id` with its writes).
 
+**Examples:** [`src/examples`](src/examples), one per file, off by default (each file says how
+to serve it). [`rrsi.py`](src/examples/rrsi.py) is a simplified
+[RRSI](https://arxiv.org/abs/2609.24972): a search that improves an agent's harness (prompt,
+skills, tools) in rounds, with regularizers against overfitting its tasks. Each round is one
+handler that commits its records and sends the next round in one transaction, and every model
+call is answered once.
+
 **Tutorial:** [`src/tutorial`](src/tutorial), one idea per file: a database per key (01–04),
 changes that happen once (05–08), agents (09–15), and an `Agent` of your own with handoffs
 (16). To run it, uncomment `services += tutorial` and the import of `tutorial` in
