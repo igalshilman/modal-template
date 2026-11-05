@@ -4,26 +4,30 @@ description: >
   Run the Python project's Restate app (python/) locally, connect it to Restate Cloud, and
   deploy it on Modal: the connect key, registering the deployment
   (connect://notes-python-v1), the Modal secret, modal deploy, logs, and changing
-  modal/on_modal.py. Use when the user wants to run, test locally, deploy, redeploy, debug a
+  modal/on_modal.py, or modal/on_modal_push.py, where Restate Cloud calls the app on Modal
+  instead. Use when the user wants to run, test locally, deploy, redeploy, debug a
   deployment, add an API key, a dependency or a system package to the image, or asks about
-  Modal, Restate Cloud, RESTATE_CONNECT_KEY or on_modal.py.
+  Modal, Restate Cloud, RESTATE_CONNECT_KEY, on_modal.py or on_modal_push.py.
 ---
 
 # Run and deploy on Modal
 
 The app is `app/__main__.py`: it defines the services, the ASGI app `app` (`restate.app([...])`),
 and ends with `restate.serve(app)`. Run every command from `python/`, the project's directory.
-The same `app` runs in one of three ways, and nothing in the file changes between them:
+The same `app` runs in one of four ways, and nothing in the file changes between them:
 
 | Where                                          | Command                                                                | Who calls whom                             |
 | ---------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
 | A Restate server on this machine (development) | `uv run app`: `restate.serve`, on `PORT` (9080 by default)             | Restate calls the app on port 9080         |
 | This machine, against Restate Cloud            | `uv run python -m restate connect app.__main__:app --name notes-python-v1` | The app connects out to Restate Cloud  |
 | Modal, against Restate Cloud                   | `modal/on_modal.py` runs that same `python -m restate connect …`       | One always-on Modal container connects out |
+| Modal, called by Restate Cloud                 | `modal/on_modal_push.py` runs `python -m restate serve app.__main__:app` | Restate Cloud calls a Modal endpoint     |
 
 Importing `app.__main__` doesn't serve it (the `serve` is under `if __name__ == "__main__"`), so
 `python -m restate connect` takes the `app` and connects it instead: the app connects out to
-Restate Cloud, rather than Restate Cloud calling Modal.
+Restate Cloud, rather than Restate Cloud calling Modal. `modal/on_modal_push.py` is the other
+way round: `python -m restate serve` takes the same `app`, and Restate Cloud calls it (see
+"On Modal, called by Restate Cloud").
 
 Only `app/` is deployed. `tutorial/` is for reading and copying into `app/__main__.py`, and
 each module of `examples/` ends with an `app` of its own, served one at a time on this
@@ -175,7 +179,7 @@ with all of its keys, and redeploy:
 
 ```sh
 uv run modal secret create restate-template --force RESTATE_CONNECT_KEY=… OPENAI_API_KEY=…
-uv run modal deploy modal/on_modal.py
+uv run modal deploy modal/on_modal.py                    # or modal/on_modal_push.py
 ```
 
 Or from a file: `uv run modal secret create restate-template --from-dotenv restate.env --force`.
@@ -196,6 +200,27 @@ connect key or a crash at import shows at once: read `uv run modal app logs rest
 On shutdown, the container sends the app SIGTERM: the SDK finishes the requests in flight,
 and Restate retries the rest on the next container.
 
+## On Modal, called by Restate Cloud
+
+`modal/on_modal_push.py` is the other way round: the same image and secret, but the container
+serves `python -m restate serve app.__main__:app` on a Modal Server, and Restate Cloud calls
+its URL over HTTP/2. The Modal app is `restate-template-python-push`. It needs no
+`RESTATE_CONNECT_KEY`, and no `NAME`: the deployment is the URL.
+
+```sh
+uv run modal deploy modal/on_modal_push.py                                    # build and run; prints the URL
+npx @restatedev/restate@1.8.1-hotfix.2 deployments register --force --yes \
+  https://<workspace>--restate-template-python-push-app.us-east.modal.direct \
+  --extra-header Modal-Key=wk-… --extra-header Modal-Secret=ws-…             # after each deploy (after `restate cloud login`)
+uv run modal app logs restate-template-python-push                            # follow it
+uv run modal app stop restate-template-python-push                            # stop it
+```
+
+Register the URL that `modal deploy` prints, with `--force`, after each deploy. The two
+headers are a Modal proxy auth token's (https://modal.com/settings/proxy-auth-tokens), which
+Restate sends on every request, so only Restate can call the endpoint; the CLI takes them as
+`name=value`. If it doesn't start, read the logs: the causes are those of `on_modal.py`, above.
+
 ## Before finishing
 
 - [ ] `app/__main__.py` still ends with `restate.serve(app)` under `if __name__ == "__main__"`
@@ -203,4 +228,5 @@ and Restate retries the rest on the next container.
 - [ ] New environment variables are documented and added to the Modal secret
 - [ ] No key or secret was written into a committed file
 - [ ] After a deploy, `uv run modal app logs restate-template-python` shows the app
-      connected, and a request through Restate Cloud answered
+      connected (or `restate-template-python-push` shows it serving), and a request
+      through Restate Cloud answered

@@ -62,8 +62,9 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   go in `app = restate.app([...])`, the ASGI app, and it ends with
   `restate.serve(app)` under `if __name__ == "__main__"`. `uv run app` serves it on `PORT`
   (9080 by default); `python -m restate connect app.__main__:app --name notes-python-v1`
-  connects the same `app` to Restate Cloud, which is what Modal runs. Don't add a `connect`
-  call or a switch to the file.
+  connects the same `app` to Restate Cloud, which is what Modal runs (`modal/on_modal.py`;
+  `modal/on_modal_push.py` runs `python -m restate serve app.__main__:app` instead, for
+  Restate Cloud to call). Don't add a `connect` call or a switch to the file.
 - `restate.app([...])` serves everything: services, virtual objects, workflows, session
   objects and agents. An agent brings along what it needs (the `signals` object its tools
   wait on), served once however many agents there are. Anything with a

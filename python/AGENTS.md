@@ -1,7 +1,8 @@
 # Working on the Python project
 
 A starter kit: a Restate application in Python (`app/__main__.py`: notes, and an assistant
-that keeps them) that connects to Restate Cloud and is deployed on Modal (`modal/on_modal.py`).
+that keeps them) that connects to Restate Cloud and is deployed on Modal (`modal/on_modal.py`,
+or `modal/on_modal_push.py`, where Restate Cloud calls it instead).
 Beside it, for this machine only: a tutorial to read and copy from (`tutorial/`), and
 complete examples, each ending with an ASGI app (`examples/`).
 
@@ -13,7 +14,7 @@ Load the skill for the task before starting (they are in `.agents/skills/`, and 
 - **building-restate-services**: writing or changing services, session objects, agents,
   virtual objects or workflows.
 - **deploying-on-modal**: running the app locally, connecting it to Restate Cloud,
-  deploying it on Modal, its secret and its image.
+  deploying it on Modal (connected, or called by Restate Cloud), its secret and its image.
 
 ## The rule that matters most
 
@@ -50,7 +51,9 @@ uv run ruff format                                  # format
 
 - Services go in `app = restate.app([...])` in `app/__main__.py`, the ASGI app. An agent
   brings along what it needs (the `signals` object), served once. The file ends with `restate.serve(app)`; Restate Cloud and Modal connect the same
-  `app` with `python -m restate connect app.__main__:app --name notes-python-v1`.
+  `app` with `python -m restate connect app.__main__:app --name notes-python-v1`, and
+  `modal/on_modal_push.py` serves it on Modal with `python -m restate serve app.__main__:app`,
+  for Restate Cloud to call.
 - An example is a module of `examples/` that ends with `app = restate.app([...])`. Serve it with
   `python -m restate serve` (above), or connect it to Restate Cloud with
   `python -m restate connect examples.<name>:app --name <name>-python-v1`. A lesson of `tutorial/` is only read and copied:

@@ -13,7 +13,8 @@ commands from python/, the project's directory:
     npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://notes-python-v1        # once (after `restate cloud login`)
 
 `uv run modal app logs restate-template-python` follows the app;
-`uv run modal app stop restate-template-python` stops it.
+`uv run modal app stop restate-template-python` stops it. For Restate Cloud to
+call the app on Modal instead, see modal/on_modal_push.py.
 """
 
 import subprocess
