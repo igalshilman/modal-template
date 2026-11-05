@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.ruff_cache/
+# Your keys, downloaded from the Cloud UI (see README).
+restate.env
+.env
+.env.*
+.DS_Store
+.idea/
