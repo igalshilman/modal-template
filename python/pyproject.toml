@@ -1,32 +1,38 @@
 [project]
 name = "modal-template"
 version = "0.1.0"
-description = "A Restate application on Modal, connected to Restate Cloud: the sessions tutorial, a wallet per user, from a SQL database per key to agents"
+description = "A Restate application on Modal, connected to Restate Cloud, with a tutorial and examples of session objects and durable agents"
 license = "MIT"
 requires-python = ">=3.13"
-# What the app imports at runtime: the Modal image installs these, and not the dev group.
+# What app/ imports at runtime: the Modal image installs these, and no dependency group.
 dependencies = [
-    "restate-sdk[serve,openai]>=1.4",  # openai: the agents of the tutorial (lessons 09 to 16)
+    "restate-sdk[serve,openai]>=1.4.2",  # openai: the app's assistant, and the tutorial's agents (lessons 09 to 16)
     "pydantic>=2",
 ]
 
 [dependency-groups]
 dev = [
     # The client, for scripts that call the app (see README); the app itself doesn't need it.
-    "restate-sdk[client]>=1.4",
+    "restate-sdk[client]>=1.4.2",
     "modal>=1.6",
     "python-dotenv>=1",
     "pyright>=1.1.400",
     "ruff>=0.12",
 ]
+# What examples/ needs beside the app's dependencies; installed by `uv sync`, not on Modal.
+examples = [
+    "restate-sdk[langgraph]>=1.4.2",
+    "langchain-openai>=1",
+]
 
 [tool.uv]
 # An application, not a library: `uv sync` installs its dependencies, not the project itself.
 package = false
+default-groups = ["dev", "examples"]
 
 [tool.ruff]
 line-length = 120
-src = ["src"]
+src = ["."]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "RUF"]
@@ -38,11 +44,10 @@ ignore = ["E501"]
 known-third-party = ["modal"]
 
 [tool.pyright]
-include = ["src", "modal"]
-extraPaths = ["src"]
+include = ["app", "tutorial", "examples", "modal"]
 pythonVersion = "3.13"
-# Strict for the app; modal/ is checked too, but Modal's decorators are not fully typed.
+# Strict for the code; modal/ is checked too, but Modal's decorators are not fully typed.
 typeCheckingMode = "standard"
-strict = ["src"]
+strict = ["app", "tutorial", "examples"]
 venvPath = "."
 venv = ".venv"

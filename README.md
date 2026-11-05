@@ -17,10 +17,14 @@ Both have the same shape:
 ├── README.md        how to run it locally, connect it to Restate Cloud, deploy it on Modal
 ├── AGENTS.md        instructions for coding agents (CLAUDE.md points to it)
 ├── .agents/skills/  skills for coding agents: building Restate services, deploying on Modal
-├── src/app.*        the app: notes per user, a session object with a SQL database per key
-├── src/tutorial/    the tutorial: a wallet per user, from a database per key to agents
-└── modal/on_modal.py  the Modal app: one always-on container that runs src/app.*
+├── <the app>        notes per user, a session object with a SQL database per key
+├── <the tutorial>   a wallet per user, from a database per key to agents
+└── modal/on_modal.py  the Modal app: one always-on container that runs the app
 ```
+
+In TypeScript, the app is `src/app.ts` and the tutorial `src/tutorial/`. In Python, the app
+is `app/__main__.py` (with an assistant beside the notes), the tutorial `tutorial/`, and
+`examples/` holds complete examples, each ending with an ASGI app; only `app/` is deployed.
 
 ## What's in it
 

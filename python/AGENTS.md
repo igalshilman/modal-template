@@ -1,7 +1,9 @@
 # Working on the Python project
 
-A starter kit: a Restate application in Python (`src/app.py`) that connects to Restate Cloud
-and is deployed on Modal (`modal/on_modal.py`), with a tutorial in `src/tutorial/`.
+A starter kit: a Restate application in Python (`app/__main__.py`: notes, and an assistant
+that keeps them) that connects to Restate Cloud and is deployed on Modal (`modal/on_modal.py`).
+Beside it, for this machine only: a tutorial to read and copy from (`tutorial/`), and
+complete examples, each ending with an ASGI app (`examples/`).
 
 ## Skills
 
@@ -37,21 +39,30 @@ Run them from `python/`, this project's directory:
 
 ```sh
 uv sync
-uv run src/app.py                                   # the app
+uv run app                                          # the app, on port 9080
+uv run python -m restate serve examples.chat:app    # an example, on port 9080
+uv run python -m restate.agents chat assistant/alice   # chat with an agent from the terminal
 uv run ruff check && uv run ruff format --check && uv run pyright   # lint
 uv run ruff format                                  # format
 ```
 
 ## Conventions
 
-- Services go in `services` in `src/app.py`, served with `sessions.app(*services)`.
-  `restate.connect` (Restate Cloud) is what is committed; `restate.serve` is for a Restate
-  server on this machine.
-- Runtime dependencies go in `[project] dependencies` of `pyproject.toml`, tools in the `dev`
-  group: the Modal image installs the runtime dependencies only (at `uv.lock`'s versions), and
-  copies only `src/`. After changing dependencies, run `uv lock` and commit `uv.lock`.
-- Agents: the OpenAI Agents SDK is installed (`restate-sdk[serve,openai]`), and the
-  tutorial's agents (lessons 09–16) use it. Another framework needs its extra of
-  `restate-sdk` (`[langgraph]`, `[pydantic-ai]`, `[adk]`) and its model provider's package.
+- Services go in `app = restate.app([...])` in `app/__main__.py`, the ASGI app. An agent
+  brings along what it needs (the `signals` object), served once. The file ends with `restate.serve(app)`; Restate Cloud and Modal connect the same
+  `app` with `python -m restate connect app.__main__:app --name notes-python-v1`.
+- An example is a module of `examples/` that ends with `app = restate.app([...])`. Serve it with
+  `python -m restate serve` (above), or connect it to Restate Cloud with
+  `python -m restate connect examples.<name>:app --name <name>-python-v1`. A lesson of `tutorial/` is only read and copied:
+  nothing imports it.
+- Dependencies, in `pyproject.toml`: what `app/` imports in `[project] dependencies`, what
+  only the examples need in the `examples` group, tools in the `dev` group. The Modal image
+  installs `[project] dependencies` only (at `uv.lock`'s versions), and copies only `app/`.
+  After changing dependencies, run `uv lock` and commit `uv.lock`.
+- Agents: the OpenAI Agents SDK is installed (`restate-sdk[serve,openai]`), and the app's
+  assistant and the tutorial's agents (lessons 09–16) use it; LangGraph and
+  `langchain-openai` are in the `examples` group. Another framework in `app/` needs its extra
+  of `restate-sdk` (`[langgraph]`, `[pydantic-ai]`, `[adk]`) and its model provider's package
+  in `[project] dependencies`.
 - Keys (`RESTATE_CONNECT_KEY`, model API keys) come from the environment, and on Modal from
   its secret. Never commit them.

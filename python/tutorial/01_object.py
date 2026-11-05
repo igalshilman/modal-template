@@ -6,9 +6,12 @@ finds it by key: ``wallet01/alice`` and ``wallet01/bob`` are two instances of
 the same object. Restate runs the requests for one key one at a time, so a
 wallet never handles two of them at once.
 
-Every lesson's objects carry its number (``wallet01``, ``wallet02``, …), so
-all the lessons are served together. Include them in src/app.py (its comment
-shows how: two lines to uncomment), run it, and call any lesson through Restate::
+The lessons are for reading and copying, not served on their own. To try one,
+copy it into app/__main__.py and add its objects (the ``services`` at the end
+of each lesson) to ``restate.app([...])`` there. Each lesson's objects carry
+its number (``wallet01``, ``wallet02``, …), so several can sit in the app side
+by side.
+Run the app (``uv run app``) and call the lesson through Restate::
 
     curl localhost:8080/wallet01/alice/hello   # "Hello, alice!"
 """

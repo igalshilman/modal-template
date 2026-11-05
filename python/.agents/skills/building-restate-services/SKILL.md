@@ -6,7 +6,7 @@ description: >
   (restate.agents: OpenAI Agents SDK, LangGraph, Pydantic AI, Google ADK, or a loop of your
   own), and journaled Restate services, virtual objects and workflows (restate). Use when
   the user mentions Restate, session objects, SessionObject, ctx.db, durable agents, virtual
-  objects, workflows, durable execution, or edits src/app.py or src/tutorial.
+  objects, workflows, durable execution, or edits app/, tutorial/ or examples/.
 ---
 
 # Restate in this project
@@ -58,20 +58,30 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
 
 ## Step 2: the project
 
-- `src/app.py` is the application: its services go in `services`, which
-  `restate.connect(sessions.app(*services), name="notes-python-v1")` connects to Restate
-  Cloud. For a Restate server on this machine, the commented
-  `restate.serve(sessions.app(*services))` line replaces it (on `PORT`, 9080 by default).
-- Serve with `sessions.app(...)`, not `restate.app([...])`: it takes the services as
-  arguments and adds what they need (every agent's companion `signals` object), and it serves
-  journaled services too.
-- `src/tutorial/`: the tutorial, one idea per lesson, off by default (see the comment in
-  `src/app.py`). Lessons 01–08 are session objects; 09–15 agents on the OpenAI Agents SDK
+- `app/__main__.py` is the application, and the only folder deployed on Modal: its services
+  go in `app = restate.app([...])`, the ASGI app, and it ends with
+  `restate.serve(app)` under `if __name__ == "__main__"`. `uv run app` serves it on `PORT`
+  (9080 by default); `python -m restate connect app.__main__:app --name notes-python-v1`
+  connects the same `app` to Restate Cloud, which is what Modal runs. Don't add a `connect`
+  call or a switch to the file.
+- `restate.app([...])` serves everything: services, virtual objects, workflows, session
+  objects and agents. An agent brings along what it needs (the `signals` object its tools
+  wait on), served once however many agents there are. Anything with a
+  `__restate_services__()` method (`restate.Servable`) can be listed, such as a group of
+  services.
+- `tutorial/`: the tutorial, one idea per lesson, for reading and copying into
+  `app/__main__.py`; nothing serves it, and it has no `__init__.py`. Each lesson ends with its
+  `services`. Lessons 01–08 are session objects; 09–15 agents on the OpenAI Agents SDK
   (`openai.prompt`, `openai.agent`, `@tool`, tools that write, `call`, `wait_for_signal`,
   `subagent`), and 16 an `Agent` of the SDK of your own, with handoffs. Read the closest
-  lesson before writing similar code. A lesson's file name starts with its number, so `src/tutorial/__init__.py`
-  imports it with `importlib`; add a new lesson to `LESSONS` there.
-- From `python/`: run with `uv run src/app.py`; check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
+  lesson before writing similar code; list a new one in `tutorial/README.md`.
+- `examples/`: complete examples, one module each, ending with `app = restate.app([...])`:
+  `chat` (OpenAI Agents SDK), `langgraph_agent`, `models` (LangChain chat models of your
+  own), `memory` (an agent with a table of its own) and `support` (a service, a workflow and
+  a signal as tools). `uv run python -m restate serve examples.<name>:app`
+  serves one on this machine. Their extra dependencies are in the `examples` group of
+  `pyproject.toml`, which Modal doesn't install.
+- From `python/`: check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
   and format with `uv run ruff format`.
 - To run it locally, connect it to Restate Cloud, or deploy it on Modal: the
   **deploying-on-modal** skill.
@@ -224,5 +234,6 @@ query the server with SQL. It describes itself, so ask it instead of guessing:
   - [ ] `restate.gather` / `restate.select`, not `asyncio` combinators
   - [ ] `TerminalError` for failures that must not be retried
   - [ ] No deadlock cycles between virtual objects calling each other
-- Always: lint passes, the service is in `services` in `src/app.py`, and it was called
+- Always: lint passes, the service is in `restate.app([...])` in `app/__main__.py` (or an
+  example's `app`), and it was called
   through Restate (curl, the playground, or the UI).
