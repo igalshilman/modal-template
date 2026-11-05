@@ -1,8 +1,6 @@
-node_modules/
-# Your keys, downloaded from the Cloud UI (see README).
+# Each project (typescript/, python/) has its own .gitignore; these apply to both.
 restate.env
 .env
 .env.*
 .DS_Store
 .idea/
-__pycache__/

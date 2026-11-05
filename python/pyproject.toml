@@ -1,0 +1,48 @@
+[project]
+name = "modal-template"
+version = "0.1.0"
+description = "A Restate application on Modal, connected to Restate Cloud: the sessions tutorial, a wallet per user, from a SQL database per key to agents"
+license = "MIT"
+requires-python = ">=3.13"
+# What the app imports at runtime: the Modal image installs these, and not the dev group.
+dependencies = [
+    "restate-sdk[serve,openai]>=1.4",  # openai: the agents of the tutorial (lessons 09 to 16)
+    "pydantic>=2",
+]
+
+[dependency-groups]
+dev = [
+    # The client, for scripts that call the app (see README); the app itself doesn't need it.
+    "restate-sdk[client]>=1.4",
+    "modal>=1.6",
+    "python-dotenv>=1",
+    "pyright>=1.1.400",
+    "ruff>=0.12",
+]
+
+[tool.uv]
+# An application, not a library: `uv sync` installs its dependencies, not the project itself.
+package = false
+
+[tool.ruff]
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "RUF"]
+# `ruff format` keeps code within line-length; docstrings and comments may run longer (curl commands).
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+# The project's modal/ folder is not the `modal` package.
+known-third-party = ["modal"]
+
+[tool.pyright]
+include = ["src", "modal"]
+extraPaths = ["src"]
+pythonVersion = "3.13"
+# Strict for the app; modal/ is checked too, but Modal's decorators are not fully typed.
+typeCheckingMode = "standard"
+strict = ["src"]
+venvPath = "."
+venv = ".venv"
