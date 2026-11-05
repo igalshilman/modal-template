@@ -1,7 +1,7 @@
 ---
 name: building-restate-services
 description: >
-  Design, build, run and test Restate services in TypeScript in this repository: session
+  Design, build, run and test Restate services in the TypeScript project (typescript/): session
   objects with a SQL database per key (@restatedev/sessions), durable AI agents on them
   (@restatedev/agents: pi, OpenCode, LangGraph, Claude, DeepSeek), and journaled Restate
   services, virtual objects and workflows (@restatedev/restate-sdk). Use when the user

@@ -1,4 +1,4 @@
-# Working on this repository
+# Working on the TypeScript project
 
 A starter kit: a Restate application in TypeScript (`src/app.ts`) that connects to Restate
 Cloud and is deployed on Modal (`modal/on_modal.py`), with a tutorial in `src/tutorial/`.
@@ -31,6 +31,8 @@ or awakeables in a session object or an agent, even where another Restate skill 
 "always": those rules are for journaled handlers.
 
 ## Commands
+
+Run them from `typescript/`, this project's directory:
 
 ```sh
 pnpm install

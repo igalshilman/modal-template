@@ -1,7 +1,7 @@
 ---
 name: deploying-on-modal
 description: >
-  Run this repository's Restate app locally, connect it to Restate Cloud, and deploy it on
+  Run the TypeScript project's Restate app (typescript/) locally, connect it to Restate Cloud, and deploy it on
   Modal: the connect key, registering the deployment (connect://notes-v1), the Modal secret,
   modal deploy, logs, and changing modal/on_modal.py. Use when the user wants to run, test
   locally, deploy, redeploy, debug a deployment, add an API key or a system package to the
@@ -129,9 +129,9 @@ modal app logs restate-template                                                 
 modal app stop restate-template                                                 # stop it
 ```
 
-Then register `connect://notes-v1` as above, once. Run the `modal` commands from the
-repository's root, as above. To check the Modal package itself, don't run
-`python -c "import modal"` from the root: Python finds the repository's `modal/` folder first.
+Then register `connect://notes-v1` as above, once. Run the `modal` commands from
+`typescript/`, the project's directory, as above. To check the Modal package itself, don't run
+`python -c "import modal"` from there: Python finds the project's `modal/` folder first.
 
 ### What goes into the image
 

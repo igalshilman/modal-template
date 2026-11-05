@@ -1,8 +1,8 @@
-# Restate on Modal: Starter Kit
+# Restate on Modal: TypeScript
 
-A [Restate](https://restate.dev) app that runs on [Modal](https://modal.com), plus pointers
-to the libraries you can build on. Use TypeScript for now: session objects and the Agent
-SDK are TypeScript-only today (Python support is coming soon).
+A [Restate](https://restate.dev) app in TypeScript that runs on [Modal](https://modal.com),
+plus pointers to the libraries you can build on. Run every command below from this
+directory, `typescript/`. The Python version is in [`../python`](../python).
 
 ## A quick outline of the relevant resources
 

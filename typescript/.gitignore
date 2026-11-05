@@ -1,0 +1,8 @@
+node_modules/
+# Your keys, downloaded from the Cloud UI (see README).
+restate.env
+.env
+.env.*
+.DS_Store
+.idea/
+__pycache__/
