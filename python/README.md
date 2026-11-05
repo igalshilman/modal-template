@@ -171,7 +171,7 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
   to run twice (for example, record `ctx.request.id` with its writes).
 
 **Examples:** [`src/examples`](src/examples), one per file, off by default (each file says how
-to serve it). [`rrsi.py`](src/examples/rrsi.py) is a simplified
+to serve it). [`rrsi/`](src/examples/rrsi) is a simplified
 [RRSI](https://arxiv.org/abs/2609.24972): a search that improves an agent's harness (prompt,
 skills, tools) in rounds, with regularizers against overfitting its tasks. Each round is one
 handler that commits its records and sends the next round in one transaction, and every model
