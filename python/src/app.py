@@ -29,7 +29,7 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
 
 
 services: list[restate.VirtualObject | restate.Service | restate.Workflow] = [notes]
-# To try the tutorial (src/tutorial), uncomment the two lines below.
+# To try the tutorial (src/tutorial), uncomment the two lines below. Lessons 09 to 16 also need OPENAI_API_KEY.
 # from tutorial import tutorial
 # services += tutorial
 

@@ -66,8 +66,10 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   arguments and adds what they need (every agent's companion `signals` object), and it serves
   journaled services too.
 - `src/tutorial/`: the tutorial, one idea per lesson, off by default (see the comment in
-  `src/app.py`). Lessons 01–08 are session objects. Read the closest lesson before writing
-  similar code. A lesson's file name starts with its number, so `src/tutorial/__init__.py`
+  `src/app.py`). Lessons 01–08 are session objects; 09–15 agents on the OpenAI Agents SDK
+  (`openai.prompt`, `openai.agent`, `@tool`, tools that write, `call`, `wait_for_signal`,
+  `subagent`), and 16 an `Agent` of the SDK of your own, with handoffs. Read the closest
+  lesson before writing similar code. A lesson's file name starts with its number, so `src/tutorial/__init__.py`
   imports it with `importlib`; add a new lesson to `LESSONS` there.
 - Check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
   and format with `uv run ruff format`.

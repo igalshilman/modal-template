@@ -50,7 +50,8 @@ uv run ruff format                                  # format
 - Runtime dependencies go in `[project] dependencies` of `pyproject.toml`, tools in the `dev`
   group: the Modal image installs the runtime dependencies only (at `uv.lock`'s versions), and
   copies only `src/`. After changing dependencies, run `uv lock` and commit `uv.lock`.
-- A framework's agents need its extra of `restate-sdk` (`restate-sdk[serve,openai]`,
-  `[langgraph]`, `[pydantic-ai]`, `[adk]`) and its model provider's package.
+- Agents: the OpenAI Agents SDK is installed (`restate-sdk[serve,openai]`), and the
+  tutorial's agents (lessons 09–16) use it. Another framework needs its extra of
+  `restate-sdk` (`[langgraph]`, `[pydantic-ai]`, `[adk]`) and its model provider's package.
 - Keys (`RESTATE_CONNECT_KEY`, model API keys) come from the environment, and on Modal from
   its secret. Never commit them.

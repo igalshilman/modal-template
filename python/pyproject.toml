@@ -6,7 +6,7 @@ license = "MIT"
 requires-python = ">=3.13"
 # What the app imports at runtime: the Modal image installs these, and not the dev group.
 dependencies = [
-    "restate-sdk[serve]>=1.4",
+    "restate-sdk[serve,openai]>=1.4",  # openai: the agents of the tutorial (lessons 09 to 16)
     "pydantic>=2",
 ]
 

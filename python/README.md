@@ -121,9 +121,15 @@ assistant = openai.agent("assistant", system="Answer briefly.", tools=[get_weath
 ```
 
 To serve agents, add them to `services` in [`src/app.py`](src/app.py) (`sessions.app` adds
-what they need beside them), and add the framework's extra to `restate-sdk` in
-[`pyproject.toml`](pyproject.toml) (`restate-sdk[serve,openai]`), then `uv lock`. Chat with
-one with `curl localhost:8080/assistant/alice/chat -d 'What is the weather in Lisbon?'`.
+what they need beside them), and put your model's API key (`OPENAI_API_KEY`) in the
+environment, and on Modal in its secret. Chat with one with
+`curl localhost:8080/assistant/alice/chat -d 'What is the weather in Lisbon?'`. The
+OpenAI Agents SDK is installed already (`restate-sdk[serve,openai]` in
+[`pyproject.toml`](pyproject.toml)); for another framework, add its extra (`langgraph`,
+`pydantic-ai`, `adk`) and its model provider's package, then `uv lock`.
+
+The tutorial's agents (lessons 09–16, below) are a walk through all of this, on the OpenAI
+Agents SDK.
 
 More examples, one per file: [`examples-agents`](https://github.com/restatedev/sdk-python/tree/main/examples-agents)
 of the Python SDK, from a basic agent per framework to agents whose tools are Restate itself,
@@ -165,5 +171,6 @@ async def list_notes(ctx: sessions.ViewContext) -> list[str]:
   to run twice (for example, record `ctx.request.id` with its writes).
 
 **Tutorial:** [`src/tutorial`](src/tutorial), one idea per file: a database per key (01–04),
-changes that happen once (05–08). To run it, uncomment the two lines below
-`services = [notes]` in [`src/app.py`](src/app.py).
+changes that happen once (05–08), agents (09–15), and an `Agent` of your own with handoffs
+(16). To run it, uncomment the two lines below `services = [notes]` in
+[`src/app.py`](src/app.py). Lessons 09–16 need `OPENAI_API_KEY`.
