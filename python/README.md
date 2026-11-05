@@ -26,10 +26,11 @@ example: a `notes` session object, and an `assistant` agent that keeps them (it 
 
 ```
 python/
-├── app/__main__.py   the app, deployed on Modal: `app = restate.app([...])`, then restate.serve
-├── tutorial/         a wallet per user, from a database per key to agents: to read and copy from
-├── examples/         complete examples, each ending with an ASGI app, `app`
-└── modal/on_modal.py the Modal app: one always-on container that connects app/ to Restate Cloud
+├── app/__main__.py         the app, deployed on Modal: `app = restate.app([...])`, then restate.serve
+├── tutorial/               a wallet per user, from a database per key to agents: to read and copy from
+├── examples/               complete examples, each ending with an ASGI app, `app`
+├── modal/on_modal.py       the Modal app: one always-on container that connects app/ to Restate Cloud
+└── modal/on_modal_push.py  the other way round: Restate Cloud calls app/ on a Modal endpoint
 ```
 
 ### Local Restate Server (OSS, for development)
@@ -37,8 +38,8 @@ python/
 ```sh
 uv sync
 uv run app                                        # your services, on port 9080
-npx @restatedev/restate-server@1.8.1              # Restate, in another terminal (UI on localhost:9070)
-npx @restatedev/restate@1.8.1 deployments register http://localhost:9080
+npx @restatedev/restate-server                    # Restate, in another terminal (UI on localhost:9070)
+npx @restatedev/restate@next deployments register http://localhost:9080
 curl localhost:8080/notes/alice/add --json '"Buy milk"'
 curl localhost:8080/notes/alice/list
 uv run python -m restate.agents chat assistant/alice   # chat with the assistant, and watch its tool calls
@@ -66,8 +67,8 @@ in the Cloud UI (the app prints this link too), or with the CLI, once it is sign
 (`cloud login` also asks which environment to use):
 
 ```sh
-npx @restatedev/restate@1.8.1-hotfix.2 cloud login
-npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://notes-python-v1
+npx @restatedev/restate@next cloud login
+npx @restatedev/restate@next deployments register connect://notes-python-v1
 ```
 
 Send requests from the [playground](https://cloud.restate.dev/to/overview?servicePlayground=notes),
@@ -101,6 +102,24 @@ Register `connect://notes-python-v1` as above. `uv run modal app logs restate-te
 follows the app. Model API keys (such as `OPENAI_API_KEY`) go in the same secret. The image
 installs the `[project] dependencies` of [`pyproject.toml`](pyproject.toml) at the versions of
 `uv.lock`, and none of its groups (`dev`, `examples`): after adding one, run `uv lock`.
+
+### Or let Restate Cloud call Modal
+
+[`modal/on_modal_push.py`](modal/on_modal_push.py) runs the same `app` the other way round:
+`python -m restate serve app.__main__:app` on a [Modal Server](https://modal.com/docs/guide/servers),
+and Restate Cloud calls its URL over HTTP/2. Same image and secret (no `RESTATE_CONNECT_KEY`
+needed), plus a Modal [proxy auth token](https://modal.com/settings/proxy-auth-tokens) so that
+only Restate can call it:
+
+```sh
+uv run modal deploy modal/on_modal_push.py        # prints the app's URL
+npx @restatedev/restate@next deployments register --force --yes \
+  https://<workspace>--restate-template-python-push-app.us-east.modal.direct \
+  --extra-header Modal-Key=wk-… --extra-header Modal-Secret=ws-…
+```
+
+Register the URL that `modal deploy` prints, again after each deploy.
+`uv run modal app logs restate-template-python-push` follows the app.
 
 ## Agent SDK
 
@@ -145,7 +164,7 @@ server (`--force` when you switch from another), and try the requests in its doc
 
 ```sh
 uv run python -m restate serve examples.chat:app
-npx @restatedev/restate@1.8.1 deployments register --force --yes http://localhost:9080
+npx @restatedev/restate deployments register --force --yes http://localhost:9080
 ```
 
 | Example                                          | What it shows                                                               |

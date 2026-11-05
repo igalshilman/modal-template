@@ -19,7 +19,9 @@ Or chat with the assistant from a terminal, and see its tool calls as they happe
     uv run python -m restate.agents chat assistant/alice
 
 The assistant needs OPENAI_API_KEY. On Modal, the same ``app`` connects to
-Restate Cloud instead (modal/on_modal.py): ``python -m restate connect app.__main__:app``.
+Restate Cloud instead (modal/on_modal.py): ``python -m restate connect app.__main__:app``,
+or Restate Cloud calls it there (modal/on_modal_push.py):
+``python -m restate serve app.__main__:app``.
 """
 
 import asyncio
