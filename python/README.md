@@ -174,7 +174,6 @@ npx @restatedev/restate deployments register --force --yes http://localhost:9080
 | [`models`](examples/models.py)                   | LangChain chat models you set up yourself: a gateway, no client retries     |
 | [`memory`](examples/memory.py)                   | An agent with a table of its own: tools that write `ctx.db`, and a view     |
 | [`support`](examples/support.py)                 | Restate as tools: a service, a person's approval (a signal), and a workflow |
-| [`self_improving`](examples/self_improving)      | An agent loop of your own, whose harness rewrites itself from what it learns |
 
 They need `OPENAI_API_KEY`. LangGraph and `langchain-openai` are in the `examples` group of
 `pyproject.toml`, which `uv sync` installs and the Modal image doesn't. Any example connects
