@@ -78,8 +78,9 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   lesson before writing similar code; list a new one in `tutorial/README.md`.
 - `examples/`: complete examples, one module each, ending with `app = restate.app([...])`:
   `chat` (OpenAI Agents SDK), `langgraph_agent`, `models` (LangChain chat models of your
-  own), `memory` (an agent with a table of its own) and `support` (a service, a workflow and
-  a signal as tools). `uv run python -m restate serve examples.<name>:app`
+  own), `memory` (an agent with a table of its own), `support` (a service, a workflow and
+  a signal as tools) and `self_improving` (an `AgentObject` with an agent loop of your own,
+  the model asked explicitly, and a harness it rewrites per user). `uv run python -m restate serve examples.<name>:app`
   serves one on this machine. Their extra dependencies are in the `examples` group of
   `pyproject.toml`, which Modal doesn't install.
 - From `python/`: check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
