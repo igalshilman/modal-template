@@ -21,7 +21,7 @@ dev = [
 ]
 # What examples/ needs beside the app's dependencies; installed by `uv sync`, not on Modal.
 examples = [
-    "restate-sdk[langgraph]>=1.4.2",
+    "restate-sdk[langchain,langgraph]>=1.4.2",
     "langchain-openai>=1",
 ]
 
