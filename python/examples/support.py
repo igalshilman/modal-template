@@ -10,17 +10,24 @@ changes nothing::
     curl localhost:8080/support/alice/chat/send -d 'Order 103 arrived broken, can I get my $30 back?'
 
 The agent waits for approval. See what it waits for (the refund, with the
-wait's id), and approve it::
+wait's id). Meanwhile, add to what you asked: a message sent to ``steer``
+joins the turn being answered at its next step (here, once the approval
+came), and the answer covers it too. Then approve the refund::
 
     curl localhost:8080/support/alice/pending
+    curl localhost:8080/support/alice/steer -H 'idempotency-key: m1' -d 'And where is order 104?'
     curl localhost:8080/support/alice/signal --json '{"name": "approval", "value": "approved"}'
-    curl localhost:8080/support/alice/messages   # the refund, and the answer
+    curl localhost:8080/support/alice/messages   # the refund, your second message, and the answer to both
 
 ``/send`` sends the message without waiting for the answer, which waits for
 the approval. ``{"id": "<the id>", "value": ...}`` answers one wait by its id.
+A message sent to ``steer`` when no step is left (or no turn is being
+answered) is answered as a turn of its own, in order: either way, once. Its
+idempotency key makes a retried request the same message.
 
 Or all of it from a terminal: ``uv run python -m restate.agents chat support/alice``,
-then ``/pending`` and ``/signal approval approved`` while the agent waits.
+then ``/pending``, ``/steer And where is order 104?`` and ``/signal approval approved``
+while the agent waits.
 """
 
 from datetime import timedelta

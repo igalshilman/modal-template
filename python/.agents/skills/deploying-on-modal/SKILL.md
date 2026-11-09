@@ -32,7 +32,7 @@ way round: `python -m restate serve` takes the same `app`, and Restate Cloud cal
 Only `app/` is deployed. `tutorial/` is for reading and copying into `app/__main__.py`, and
 each module of `examples/` ends with an `app` of its own, served one at a time on this
 machine: `uv run python -m restate serve examples.<name>:app`
-(`chat`, `langgraph_agent`, `models`, `memory`, `support`), or connected to Restate Cloud
+(`chat`, `langgraph_agent`, `models`, `memory`, `support`, `refund_graph`), or connected to Restate Cloud
 with `python -m restate connect examples.<name>:app --name <name>-python-v1`.
 
 ## Locally, with a Restate server (no account needed)

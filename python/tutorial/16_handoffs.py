@@ -3,7 +3,8 @@
 
 ``openai.agent(name, system=..., tools=...)`` builds an ``Agent`` of the
 OpenAI Agents SDK for you. For more of the SDK, such as handoffs or
-guardrails, give it an ``Agent`` of your own instead.
+guardrails, give it an ``Agent`` of your own instead, configured as the SDK
+does: ``openai.agent(name, agent=...)``.
 
 Here the assistant hands saving plans off to a coach. A handoff is not a
 subagent (15): the coach takes over this turn of the wallet's own
@@ -46,13 +47,13 @@ assistant = Agent(
     name="assistant",
     instructions="You are the assistant of the user's wallet. Keep your answers short. "
     "Hand plans to save up for something to the coach.",
+    tools=openai.tools([balance_tool]),
     handoffs=[coach],
 )
 
 wallet = openai.agent(
     "wallet16",
-    assistant,
-    tools=[balance_tool],  # beside the assistant's own tools; the coach has its own (above)
+    agent=assistant,  # the agent each turn starts with, as configured: its tools, and its handoffs
     migrations=[
         "CREATE TABLE entries (amount INTEGER NOT NULL)",
         "ALTER TABLE entries ADD COLUMN note TEXT",

@@ -74,12 +74,15 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   `app/__main__.py`; nothing serves it, and it has no `__init__.py`. Each lesson ends with its
   `services`. Lessons 01–08 are session objects; 09–15 agents on the OpenAI Agents SDK
   (`openai.prompt`, `openai.agent`, `@tool`, tools that write, `call`, `wait_for_signal`,
-  `subagent`), and 16 an `Agent` of the SDK of your own, with handoffs. Read the closest
+  `subagent`), and 16 an `Agent` of the SDK of your own, with handoffs
+  (`openai.agent(name, agent=...)`). Read the closest
   lesson before writing similar code; list a new one in `tutorial/README.md`.
 - `examples/`: complete examples, one module each, ending with `app = restate.app([...])`:
-  `chat` (OpenAI Agents SDK), `langgraph_agent`, `models` (LangChain chat models of your
-  own), `memory` (an agent with a table of its own) and `support` (a service, a workflow and
-  a signal as tools). `uv run python -m restate serve examples.<name>:app`
+  `chat` (OpenAI Agents SDK), `langgraph_agent` (and LangChain's `create_agent` as an
+  agent), `models` (LangChain chat models of your own), `memory` (an agent with a table of
+  its own), `support` (a service, a workflow and a signal as tools, and a steered message)
+  and `refund_graph` (a LangGraph graph of your own whose nodes are Restate steps, and an
+  agent with `output=`). `uv run python -m restate serve examples.<name>:app`
   serves one on this machine. Their extra dependencies are in the `examples` group of
   `pyproject.toml`, which Modal doesn't install.
 - From `python/`: check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),
@@ -177,22 +180,40 @@ assistant = openai.agent(
 )
 ```
 
-- Every framework's `agent(name, ..., model=, system=, tools=, **options)` returns an
-  `AgentObject`: a session object whose key is a conversation, stored in its database.
+- Every framework's `agent(name, ..., model=, system=, tools=, output=, **options)` returns
+  an `AgentObject`: a session object whose key is a conversation, stored in its database.
   `openai` (OpenAI Agents SDK), `langgraph`, `pydantic_ai` and `adk` each need their extra
   (`restate-sdk[openai]`, ...) and their model provider's package.
 - The model is `"<provider>/<model-id>"`, else `$RESTATE_AGENT_MODEL`. `system`, `model` and
   `tools` may be functions of the context, for values per user.
+- For more of a framework, pass its own agent, configured as the framework does, instead of
+  `model`, `system` and `tools` (never both): `openai.agent(name, agent=Agent(...))` (with
+  `openai.tools([...])` for this package's tools), `pydantic_ai.agent(name, agent=...)`,
+  `adk.agent(name, agent=...)`, or `langgraph.agent(name, graph=...)` for any graph on
+  `MessagesState` (LangChain's `create_agent` too, with `langgraph.tools([...])`). A graph's
+  nodes can be Restate steps: `restate.agents.langgraph.nodes` (`wait_for_signal`,
+  `workflow`, `call`, `send`, `subagent`).
+- `output=` a Pydantic model: `chat` answers with its JSON instead of text, and
+  `prompt(ctx, text, output=...)` returns a value of it.
 - Tools: `@tool` for your own functions (typed parameters, docstring); `call`, `send`
   (with `delay=`), `workflow`, `subagent` and `wait_for_signal`, built on Restate, work with
   every framework. A tool may run again after a crash mid-call: make it safe to run twice
   (a tool function's `idempotency_key` parameter).
 - Built-in handlers and views of every agent: `chat` (takes plain text: `curl -d 'Hi'`),
-  `messages`, `status`, `pending`, `signal`, `stop`, `clear`, `sync`, `watch`,
-  `notifications`. These names are reserved.
+  `steer`, `messages`, `status`, `pending`, `signal`, `stop`, `clear`, `sync`, `watch`,
+  `notifications`, and the private `settle`, `compact`, `steered` and `erase`. These names
+  are reserved.
+- Steer a turn: a message sent to `steer` (plain text, with an idempotency key) joins the
+  turn being answered at its next step, once the model's tool calls have their results;
+  with no step left, or no turn, it is answered as a turn of its own, in order. Either way,
+  once. A graph of your own (`graph=`) takes no steered messages: they are answered next.
+- Long conversations: the model gets the latest turns whole (`window=`, default 1), and the
+  turns before them as their messages and answers, within a token budget (`budget=`). A
+  built-in agent also summarizes the earliest turns, between turns; all stay stored.
 - Resolve a wait: `curl localhost:8080/assistant/alice/signal --json '{"name": "approval", "value": "approved"}'`.
 - Follow an agent from a terminal: `uv run python -m restate.agents chat assistant/alice`
-  (needs the `client` extra).
+  (needs the `client` extra); `/steer <message>`, `/signal <name> <value>` and `/pending`
+  there.
 - An agent loop of your own, with no framework: `restate.agents.internal`
   (`answer_once`, `Conversation`, `run_tool`) on an `AgentObject`.
 

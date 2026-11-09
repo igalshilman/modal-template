@@ -149,8 +149,26 @@ Each brings along what it needs (the `signals` object its waits use). Put your m
 (`OPENAI_API_KEY`) in the environment, and on Modal in its secret. Chat with
 `curl localhost:8080/assistant/alice/chat -d 'Hi'`, or from a terminal with
 `uv run python -m restate.agents chat assistant/alice`. The chat client shows each tool call
-as it happens, answers an agent's waits (`/pending`, `/signal <name> <value>`), and talks to
-Restate Cloud when `RESTATE_INGRESS_KEY` is set.
+as it happens, answers an agent's waits (`/pending`, `/signal <name> <value>`), steers the
+turn being answered (`/steer <message>`), and talks to Restate Cloud when
+`RESTATE_INGRESS_KEY` is set.
+
+- **Steer a turn.** A message sent to `steer` rather than `chat` joins the turn being
+  answered at its next step (once the model's tool calls have their results), and the
+  answer covers it. With no step left, it is answered as a turn of its own, in the order
+  sent. Either way it is answered once: send it with an idempotency key, so that a retried
+  request is the same message:
+  `curl localhost:8080/assistant/alice/steer -H 'idempotency-key: m1' -d 'Only the urgent ones'`.
+- **Answers that are data.** `output=` takes a Pydantic model: `chat` then answers with its
+  JSON, and `prompt(ctx, text, output=...)` with a value of it.
+- **The framework's own agent.** Each framework's `agent(...)` takes the common options
+  (`model`, `system`, `tools`), or the framework's own agent, configured as the framework
+  does: `openai.agent("desk", agent=Agent(..., tools=openai.tools([...])))`, or
+  `langgraph.agent("desk", graph=...)` for any graph on LangGraph's `MessagesState` (LangChain's
+  `create_agent` too), whose nodes can be Restate steps (`restate.agents.langgraph.nodes`).
+- **Long conversations.** The model gets the latest turns whole (`window=`), and the turns
+  before them as their messages and answers, within a token budget (`budget=`). A built-in
+  agent also summarizes the earliest turns, between turns; all of them stay stored.
 
 The OpenAI Agents SDK is installed already (`restate-sdk[serve,openai]` in
 [`pyproject.toml`](pyproject.toml)). For another framework, add its extra (`langgraph`,
@@ -167,17 +185,19 @@ uv run python -m restate serve examples.chat:app
 npx @restatedev/restate deployments register --force --yes http://localhost:9080
 ```
 
-| Example                                          | What it shows                                                               |
-| ------------------------------------------------ | --------------------------------------------------------------------------- |
-| [`chat`](examples/chat.py)                       | A chat agent on the OpenAI Agents SDK, with a tool                          |
-| [`langgraph_agent`](examples/langgraph_agent.py) | The same agent on LangGraph                                                 |
-| [`models`](examples/models.py)                   | LangChain chat models you set up yourself: a gateway, no client retries     |
-| [`memory`](examples/memory.py)                   | An agent with a table of its own: tools that write `ctx.db`, and a view     |
-| [`support`](examples/support.py)                 | Restate as tools: a service, a person's approval (a signal), and a workflow |
+| Example                                          | What it shows                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| [`chat`](examples/chat.py)                       | A chat agent on the OpenAI Agents SDK, with a tool                                                           |
+| [`langgraph_agent`](examples/langgraph_agent.py) | The same agent on LangGraph, and LangChain's `create_agent` as an agent                                      |
+| [`models`](examples/models.py)                   | LangChain chat models you set up yourself: a gateway, no client retries                                      |
+| [`memory`](examples/memory.py)                   | An agent with a table of its own: tools that write `ctx.db`, and a view                                      |
+| [`support`](examples/support.py)                 | Restate as tools: a service, a person's approval (a signal), and a workflow; a message steered into the turn |
+| [`refund_graph`](examples/refund_graph.py)       | A LangGraph graph of your own whose steps are Restate's, and an agent that answers with data (`output=`)     |
 
-They need `OPENAI_API_KEY`. LangGraph and `langchain-openai` are in the `examples` group of
-`pyproject.toml`, which `uv sync` installs and the Modal image doesn't. Any example connects
-to Restate Cloud too: `uv run python -m restate connect examples.chat:app --name chat-python-v1`.
+They need `OPENAI_API_KEY`. LangGraph, LangChain and `langchain-openai` are in the `examples`
+group of `pyproject.toml`, which `uv sync` installs and the Modal image doesn't. Any example
+connects to Restate Cloud too:
+`uv run python -m restate connect examples.chat:app --name chat-python-v1`.
 
 More, one per file: [`examples-agents`](https://github.com/restatedev/sdk-python/tree/main/examples-agents)
 of the Python SDK, from a basic agent per framework to agents whose tools are Restate itself,
