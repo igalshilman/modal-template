@@ -20,8 +20,8 @@ The first three follow [ts/api-and-pitfalls.md](ts/api-and-pitfalls.md); the las
 Answer in order; the first "yes" is the type.
 
 1. **Is it an AI agent or an LLM conversation?** Use `@restatedev/agents`:
-   - a chat agent with tools: `pi.agent({ name, tools })` (or `opencode`, `langgraph`,
-     `claude`, `deepseek`);
+   - a chat agent with tools: `pi.agent({ name, tools })` (or `langgraph`, `claude`,
+     `deepseek`);
    - an agent beside handlers and tables of your own: `sessionObject` of
      `@restatedev/agents`, with `chat: pi.chat(...)` and `messages: pi.messages()`;
    - one model answer inside an existing session handler: `pi.prompt(ctx, text)`.

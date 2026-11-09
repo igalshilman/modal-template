@@ -166,7 +166,7 @@ An agent's `chat` is a session handler, so the table above applies to it:
   client that may resend a message gives it an idempotency key
   (`curl …/chat/send -H 'idempotency-key: msg-1'`, or `clients.rpc.sendOpts({ idempotencyKey })`).
 - **Tools run at least once:** a tool that changes something outside passes its
-  `idempotencyKey` on, or takes `retryOf` on OpenCode and the DeepSeek Harness
+  `idempotencyKey` on, or takes `retryOf` on the DeepSeek Harness
   ([restate-agents.md](restate-agents.md), "Tools that must not run twice"). A tool's own
   "never twice, ever" needs a business id recorded in `ctx.db`, as above.
 

@@ -9,7 +9,7 @@ directory, `typescript/`. The Python version is in [`../python`](../python).
 - **[Connecting your code to Restate & Modal](#connecting-your-code-to-restate--modal)**:
   run locally, connect to Restate Cloud, deploy on Modal.
 - **[Agent SDK](#agent-sdk)** (`@restatedev/agents`): a high-level agent SDK on session
-  objects, with pi, OpenCode, LangGraph, Claude and the DeepSeek Harness.
+  objects, with pi, LangGraph, Claude and the DeepSeek Harness.
 - **[Session Objects](#session-objects)** (`@restatedev/sessions`): the Cloudflare Durable
   Objects / celld-like construct, with SQLite database per key.
 - **[Restate agentlib](#restate-agentlib)** (`@restatedev/agentlib`): an agent harness built
@@ -98,9 +98,11 @@ Model API keys (such as `OPENAI_API_KEY`) go in the same secret.
 
 [`@restatedev/agents`](https://github.com/restatedev/sdk-sessions/tree/main/packages/agents)
 shows how to structure a high-level agent SDK on session objects. It adds integrations for
-pi, OpenCode, LangGraph, Claude and the DeepSeek Harness. Each agent is a session object
-with its conversation in its own database. You can still write workflows as plain Restate
-handlers and call other services.
+pi, LangGraph, Claude and the DeepSeek Harness. Each agent is a session object with its
+conversation in its own database, as turns: each message is answered once, a message sent
+while the agent works waits for its own turn, and one sent to its `steer` view joins the turn
+being answered instead. You can still write workflows as plain Restate handlers and call
+other services.
 
 ```ts
 import { tool } from '@restatedev/agents';
@@ -125,7 +127,7 @@ from `@restatedev/agents`.
 A session object is a virtual object with a `schema` and a database, `ctx.db`: the Cloudflare
 Durable Objects / celld-like API. Each key (`alice`, `bob`, …) gets its own SQLite-compatible
 database of up to 10 GiB, stored in Restate's state, so there is no separate database to run.
-This is what powers the pi and OpenCode integrations.
+This is what powers the agents: each framework keeps its state in the key's database.
 
 ```ts
 import * as restate from '@restatedev/sessions';

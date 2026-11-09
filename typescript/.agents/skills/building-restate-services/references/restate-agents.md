@@ -1,10 +1,12 @@
 # Agents on session objects (`@restatedev/agents`)
 
-`@restatedev/agents` runs an agent of one of five frameworks (pi, OpenCode, LangGraph,
-Claude, the DeepSeek Harness) inside a Restate session object. The conversation lives in
-the object's SQL database. A crash, a restart, or a person who takes a day to approve
-changes nothing: each message is answered once per invocation (a message resent without
-an idempotency key is a new one), and Restate's own tools make each call once. Tools of your own need care: see "Tools that must not run twice".
+`@restatedev/agents` runs an agent of one of four frameworks (pi, LangGraph, Claude, the
+DeepSeek Harness) inside a Restate session object. The conversation lives in the object's
+SQL database, as a conversation of turns: each turn is a message, the model's replies and
+tool calls that answered it, and its answer. A crash, a restart, or a person who takes a day
+to approve changes nothing: each message is answered once per invocation (a message resent
+without an idempotency key is a new one), and Restate's own tools make each call once. Tools
+of your own need care: see "Tools that must not run twice".
 
 An agent **is a session object**, so [session-objects.md](session-objects.md) applies to it
 and to every handler you add to it: no journal replay, no `ctx.run`, `Promise.all` is fine,
@@ -15,10 +17,13 @@ is stored in the database step by step, and a retried attempt resumes from it.
 
 More in this skill: [agents-frameworks.md](agents-frameworks.md) (each framework's options,
 crash behaviour and API) and [agents-operations.md](agents-operations.md) (calling and
-following an agent, turns and stopping, failures, testing, deploying). The package's own
-documentation: `node_modules/@restatedev/agents/README.md`, and per framework
-`node_modules/@restatedev/agents/src/{pi,opencode,langgraph,claude,deepseek}/README.md`.
-Its source is in `node_modules/@restatedev/agents/src/`, readable TypeScript.
+following an agent, turns, steering and stopping, failures, testing, deploying). The
+package's own documentation: `node_modules/@restatedev/agents/README.md`, and per framework
+`node_modules/@restatedev/agents/src/{pi,langgraph,claude,deepseek}/README.md`. Its source is
+in `node_modules/@restatedev/agents/src/`, readable TypeScript. How turns are answered,
+stored, steered and closed, in depth (not in the npm package):
+[docs/](https://github.com/restatedev/sdk-sessions/tree/main/packages/agents/docs), its
+`turns.md` and `conversation.md`.
 
 ## Start
 
@@ -58,26 +63,42 @@ the same function) adds what each agent needs by itself, each once: with it, lis
 | Import                         | Framework                 | Choose it when                                                                                             |
 | ------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `@restatedev/agents/pi`        | pi-durable                | The default: any provider pi-ai knows, coding tools on request (`workspace`), the Harness (compact, reset) |
-| `@restatedev/agents/opencode`  | OpenCode 2.0, embedded    | A coding agent, with OpenCode's own tools (read, edit, bash, grep, …) in a directory                       |
-| `@restatedev/agents/langgraph` | LangGraph                 | You use LangChain's tools, or a LangChain chat model of your own                                           |
+| `@restatedev/agents/langgraph` | LangGraph                 | You use LangChain: its tools, a chat model of your own, or a graph of your own                             |
 | `@restatedev/agents/claude`    | Anthropic SDK tool runner | Claude with nothing in between: the lightest, the API's own messages; Anthropic models only                |
-| `@restatedev/agents/deepseek`  | DeepSeek Harness          | DeepSeek's harness and models, or any model pi-ai knows                                                    |
+| `@restatedev/agents/deepseek`  | DeepSeek Harness          | DeepSeek's harness and models, or any model pi-ai knows; tool calls that wait for an approval              |
+
+There is no OpenCode agent any more (it was one up to 0.3.0): for a coding agent, use pi with a
+`workspace`.
 
 Each framework's packages are optional peer dependencies: install only those you import
 (the list per framework is in [agents-frameworks.md](agents-frameworks.md)). A subpath whose
 packages are missing fails as it is imported, naming the first it lacks.
 
-Every framework's `agent()` takes `name`, `model`, `system`, `tools` and `output`; pi and
-OpenCode take a `workspace` too. Every agent also takes:
+Every framework's `agent()` takes `name`, `model`, `system`, `tools` and `output`; pi takes
+a `workspace` too. Every agent also takes:
 
-| Option        | What                                                                     |
-| ------------- | ------------------------------------------------------------------------ |
-| `description` | What it is, for the UI, and for a parent's model when it is a `subagent` |
-| `background`  | It works unwatched (a subagent): followers see each turn once it ended   |
-| `schema`      | Tables of your own in its database (never named `restate_…`)             |
+| Option        | What                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| `description` | What it is, for the UI, and for a parent's model when it is a `subagent`                                     |
+| `background`  | It works unwatched (a subagent): followers see each turn once it ended, and it takes no steered messages     |
+| `schema`      | Tables of your own in its database (never named `restate_…`)                                                 |
+| `window`      | How many of the latest answered turns the model sees whole, with their tool calls (default 1), or `'all'`    |
+| `budget`      | How many tokens of the turns before the window the model sees, as their messages and answers (default 32000) |
+| `summarize`   | `(ctx, request) => summary`: summarizes the turns past `budget`, after an answer                             |
 
 `system` is the whole system prompt for Claude and LangGraph, and is added to the
-framework's own (which describes its tools) for pi, OpenCode and DeepSeek.
+framework's own (which describes its tools) for pi and DeepSeek.
+
+**What the model sees.** For Claude and LangGraph's built-in agent, the conversation of
+turns: the summary of the earliest turns (if any), the turns before the window as their
+message and answer, within `budget`, and the latest `window` turns whole. Their `agent()`
+summarizes the turns past the budget with its own model, in an invocation of its own after
+the answer (in a `sessionObject` of your own: `summarize: claude.summarizer(options)`, or
+`langgraph.summarizer(model)`; without one, the earliest turns are only left out). pi and
+the DeepSeek Harness keep their own history and compact it themselves; a LangGraph graph of
+your own sees its own state. Whatever the model sees, `messages` shows every turn as it was
+said: summaries and compactions change only what the model gets. One object holds one
+framework's conversation.
 
 ## Models
 
@@ -86,8 +107,9 @@ framework's own (which describes its tools) for pi, OpenCode and DeepSeek.
 (`ANTHROPIC_API_KEY`), the DeepSeek Harness to `deepseek/deepseek-flash`
 (`DEEPSEEK_API_KEY`).
 
-- pi, OpenCode and the DeepSeek Harness take any provider they know; LangGraph OpenAI's and
-  Anthropic's (or any LangChain chat model object as `model`); Claude Anthropic's only.
+- pi and the DeepSeek Harness take any provider they know (DeepSeek, pi-ai's); LangGraph
+  OpenAI's and Anthropic's (or any LangChain chat model object as `model`); Claude
+  Anthropic's only.
 - A model that isn't `provider/model-id`, or of a provider the framework doesn't take
   (Claude: Anthropic only; LangGraph: OpenAI and Anthropic; DeepSeek: those pi-ai knows),
   fails when the agent is defined. A missing or wrong key, or a model the provider doesn't know, fails the
@@ -129,10 +151,10 @@ than once: see "Delivery semantics" in [session-objects.md](session-objects.md) 
 layers (an attempt, a caller resending a message, the same operation later). A crash can
 cut a tool call off. What happens next depends on the framework:
 
-| Framework                  | After a crash cut a tool call off                                                              | So a tool that changes something outside                                                                  |
-| -------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| pi, LangGraph, Claude      | The same tool call runs again, **with the same `callId`**                                      | Passes `idempotencyKey` (`<invocation id>:<call id>`) on: to the API, or as the id it records in `ctx.db` |
-| OpenCode, DeepSeek Harness | The model is told the call was interrupted, and makes **a new tool call, with a new `callId`** | Also takes the id of the call it retries as input (`retryOf`), and tells the model so in its description  |
+| Framework             | After a crash cut a tool call off                                                              | So a tool that changes something outside                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| pi, LangGraph, Claude | The same tool call runs again, **with the same `callId`**                                      | Passes `idempotencyKey` (`<invocation id>:<call id>`) on: to the API, or as the id it records in `ctx.db` |
+| DeepSeek Harness      | The model is told the call was interrupted, and makes **a new tool call, with a new `callId`** | Also takes the id of the call it retries as input (`retryOf`), and tells the model so in its description  |
 
 Restate's own tools (`call`, `send`, `workflow`, `subagent`, `signal`) need nothing: made
 again with the same input, the call is the one the cut-off call made. For a tool of your own
@@ -185,7 +207,10 @@ curl localhost:8080/support/alice/signal --json '{"name": "approval", "value": "
 
 `signal` answers `{"resolved": <id>}`, or `{"resolved": null}` if nothing waited: then the
 value is dropped, unless it has `"keep": true`, which keeps it for the next wait of its name.
-A wait ends with its invocation: a stopped turn leaves `pending`.
+A wait ends with its invocation: a stopped turn leaves `pending`. Two frameworks wait the
+same way without a `signal()` tool: a DeepSeek agent's tool calls named by its `approval`
+option wait for the signal `approval` before they run, and `interrupt()` in a LangGraph graph
+of your own waits for the signal `interrupt` (agents-frameworks.md).
 
 `signal()` is a tool, so calling it is the model's choice, guided by the descriptions: use it
 as it is for approvals the model should ask for. If an approval is a hard rule (a refund over
@@ -204,8 +229,11 @@ const planner = pi.agent({ name: 'planner', output: Plan });
 ```
 
 A reply that isn't such JSON is answered once with what's wrong, for the model to reply
-again; then the invocation fails with a terminal error. `prompt(ctx, text, { output })`
-answers with one too, and a parent's model gets a subagent's as JSON.
+again; then the invocation fails with a terminal error, and the conversation shows the turn
+failed. Claude asks for it natively where the model has structured outputs (the API's
+`output_config.format`; `nativeOutput: false` turns that off); the other frameworks ask in the
+system prompt. `prompt(ctx, text, { output })` answers with one too, and a parent's model
+gets a subagent's as JSON.
 
 ## Your own session object, with an agent in it
 
@@ -234,17 +262,23 @@ const memory = sessionObject({
 ```
 
 - **Reserved names:** your handlers and views can't be named `signal`, `pending`, `status`,
-  `stop`, `notifications`, `watch`, `sync`, `clear` or `erase`. Defining one throws.
+  `stop`, `notifications` or `watch` (every object's), nor `sync`, `clear`, `steer`,
+  `erase`, `settle`, `compact` or `steered` (an agent's: one with a `messages` view).
+  Defining one throws, and doesn't type-check. A handler that compacts pi's conversation
+  needs another name (`shorten`, say: tutorial lesson 16).
 - `chat` takes options, or a function of the context giving them (each user's model and
   persona from `ctx.db`): `pi.chat(async (ctx) => ({ model: await modelOf(ctx) }))`.
 - `prompt(ctx, text, options)` asks a model from any handler, once however often the handler
   runs; each prompt of an invocation is its own: `pi.prompt(ctx, 'Describe these entries…')`.
 - `chatHandler(answer)` makes a handler that takes its message as `chat` does (text, or a
-  JSON string): `summarize: chatHandler(async (ctx, topic) => pi.prompt(ctx, …))`.
+  JSON string): `recap: chatHandler(async (ctx, topic) => pi.prompt(ctx, …))`. A `chat` made
+  so answers each steered message as a turn of its own; only a framework's own `chat()` takes
+  them mid-turn, and a `chat` that is neither refuses `steer`.
 - Its own options (`retryPolicy`, …) go in `options`, and add to the defaults: retries start
   50 ms after a failure, doubling up to 10 s apart, for up to 100,000 attempts.
-- OpenCode keeps its tables in a second database of the same key, so `ctx.db` holds only the
-  conversation's log and your tables.
+- Your tables share the database with the agent's, whose names all start with `restate_`
+  (`restate_agent_turns`, `restate_agent_items`, `restate_agent_steers`, `restate_pi_tasks`, …).
+  Read the conversation through `messages`, not those tables.
 
 ## Webhooks
 
@@ -265,8 +299,8 @@ message of the same kind.
 - [ ] The framework's packages are installed, and the model's API key is in the environment
       (and in the Modal secret, for a deployment)
 - [ ] Tools that change something outside are safe to repeat for their framework: the
-      `idempotencyKey` passed on (pi, LangGraph, Claude), or `retryOf` as well (OpenCode,
-      the DeepSeek Harness)
+      `idempotencyKey` passed on (pi, LangGraph, Claude), or `retryOf` as well (the DeepSeek
+      Harness)
 - [ ] Permanent tool failures throw `TerminalError`, so the model gets the message
 - [ ] No handler or view of yours has a reserved name, and `messages` is a view
 - [ ] The agent answered a message through Restate (curl or the playground)

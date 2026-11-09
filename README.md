@@ -7,7 +7,7 @@ and follow its README.
 
 | Project                        | Language                 | Run it with     | Built on                                                                                |
 | ------------------------------ | ------------------------ | --------------- | --------------------------------------------------------------------------------------- |
-| [`typescript/`](typescript)    | TypeScript, on Node 24   | pnpm            | `@restatedev/sessions`, `@restatedev/agents` (pi, OpenCode, LangGraph, Claude, DeepSeek) |
+| [`typescript/`](typescript)    | TypeScript, on Node 24   | pnpm            | `@restatedev/sessions`, `@restatedev/agents` (pi, LangGraph, Claude, DeepSeek)           |
 | [`python/`](python)            | Python 3.13              | uv              | `restate-sdk`: `restate.sessions`, `restate.agents` (OpenAI Agents SDK, LangGraph, Pydantic AI, Google ADK) |
 
 Both have the same shape:

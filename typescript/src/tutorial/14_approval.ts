@@ -13,11 +13,20 @@
  *   curl localhost:8080/wallet14/alice/deposit --json '{"id": "d3", "amount": 200, "note": "salary"}'
  *   curl localhost:8080/wallet14/alice/chat/send -d 'Send 150 to bob for the rent.'
  *   curl localhost:8080/wallet14/alice/pending                                     # the confirmation it waits for
+ *   curl localhost:8080/wallet14/alice/steer -d 'Also send 10 to carol.'           # joins the message being answered
  *   curl localhost:8080/wallet14/alice/signal --json '{"name": "confirmation", "value": "confirmed"}'
- *   curl localhost:8080/wallet14/alice/messages                                    # the transfer, and the answer
+ *   curl localhost:8080/wallet14/alice/messages                                    # both transfers, and one answer
  *
  * `/send` sends the message without waiting for the answer, which waits for
  * the confirmation.
+ *
+ * A message sent to `chat` meanwhile would wait its turn, after the answer.
+ * One sent to `steer` (a view every agent has) joins the message being
+ * answered instead: the model gets it once the confirmation is back, and
+ * its answer covers both. `steer` answers the message's id and the turn it
+ * was given to, or `"turn": null` if nothing was being answered. Either way
+ * it is answered once: a message that comes too late (the answer is already
+ * being written) is answered right after it, on its own.
  */
 import * as restate from '@restatedev/sessions';
 import { sessionObject, signal, tool } from '@restatedev/agents';
