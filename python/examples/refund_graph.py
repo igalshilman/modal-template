@@ -38,7 +38,7 @@ class Refund(BaseModel):
     amount: float
 
 
-# The payout, a workflow: it runs once per order.
+# The payout, a workflow: it runs once per workflow id.
 payouts = restate.Workflow("payouts")
 
 
@@ -67,11 +67,6 @@ def refund_of(state: Desk) -> dict[str, Any]:
     return state.get("refund", {})
 
 
-def order_of(state: Desk) -> str:
-    """The payout's workflow id: one payout per order, however often it is asked for."""
-    return str(refund_of(state)["order"])
-
-
 def approved(state: Desk) -> str:
     return "pay" if state.get("approval") == "approved" else "answer"
 
@@ -86,7 +81,7 @@ graph = StateGraph(Desk)
 # Prebuilt nodes that are Restate steps: each reads its input from the state, and writes its result to `output`.
 graph.add_node("read", nodes.subagent(clerk, message=request, output="refund"))
 graph.add_node("approve", nodes.wait_for_signal("approval", input=refund_of, output="approval"))
-graph.add_node("pay", nodes.workflow(pay, input=refund_of, key=order_of, output="receipt"))
+graph.add_node("pay", nodes.workflow(pay, input=refund_of, output="receipt"))  # its own workflow id, per run
 graph.add_node("answer", answer)
 graph.add_edge(START, "read")
 graph.add_edge("read", "approve")
