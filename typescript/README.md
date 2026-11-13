@@ -119,8 +119,8 @@ const weather = tool({
 const assistant = pi.agent({ name: 'assistant', tools: [weather] });
 ```
 
-To serve agents, add them to `services` in [`src/app.ts`](src/app.ts), together with `signals`
-from `@restatedev/agents`.
+To serve agents, add them to `services` in [`src/app.ts`](src/app.ts): `restate.served` adds
+each agent's companion, `<agent>.prebuilt.restate`, which keeps its waits and status.
 
 ## Session Objects
 

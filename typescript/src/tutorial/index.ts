@@ -10,7 +10,6 @@
  *
  * Lessons 09 to 16 ask OpenAI's models, with your key in `OPENAI_API_KEY`.
  */
-import { signals } from '@restatedev/agents';
 import * as l01 from './01_object.ts';
 import * as l02 from './02_database.ts';
 import * as l03 from './03_views.ts';
@@ -49,6 +48,4 @@ export const tutorial = [
   ...l15.services,
   // Appendix
   ...l16.services,
-  // What the agents need beside them: `signal` tools (14) are answered through it.
-  signals,
 ];
