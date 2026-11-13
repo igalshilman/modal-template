@@ -28,7 +28,7 @@ stored, steered and closed, in depth (not in the npm package):
 ## Start
 
 ```ts
-import { signals, tool } from '@restatedev/agents';
+import { tool } from '@restatedev/agents';
 import * as pi from '@restatedev/agents/pi';
 import { z } from 'zod';
 
@@ -45,18 +45,19 @@ export const assistant = pi.agent({ name: 'assistant', system: 'Answer briefly.'
 Each key (`assistant/alice`) is a conversation with its own database, answering one message
 at a time, in the order they came.
 
-**Serving it.** In this repository, add it to `services` in `src/app.ts`, **together with
-`signals`**, the object every agent uses for its waits and status (its companion):
+**Serving it.** In this repository, add it to `services` in `src/app.ts`:
 
 ```ts
-const services = [notes, assistant, signals];
+const services = [notes, assistant];
 ```
 
-`signals` belongs in the list once, however many agents you serve. **`restate.connect`**, what
-this repository commits, serves exactly the services it is given, so `signals` must be there.
+Each agent brings its **companion**, a virtual object of its own named
+`<agent>.prebuilt.restate` (`assistant.prebuilt.restate`), keyed as the agent, which keeps its
+waits and status. Never list it. **`restate.connect`**, what this repository commits, serves
+exactly the services it is given, so `src/app.ts` passes them through
+`restate.served(services)`, which adds each agent's companion, once: keep that call.
 `restate.serve(...services)` of `@restatedev/sessions` (and `serve` of `@restatedev/agents`,
-the same function) adds what each agent needs by itself, each once: with it, listing
-`signals` is harmless.
+the same function) does it by itself.
 
 ## Choose a framework
 
@@ -239,7 +240,7 @@ gets a subagent's as JSON.
 
 `agent()` is a session object with `chat` and `messages`. For handlers and tables of your
 own, use `sessionObject` of `@restatedev/agents` (not of `@restatedev/sessions`): it adds what
-agents need (the built-in views, retries for weeks, the companion in `signals`):
+agents need (the built-in views, retries for weeks, its companion):
 
 ```ts
 import { sessionObject } from '@restatedev/agents';
@@ -295,7 +296,7 @@ message of the same kind.
 ## Before finishing (agents)
 
 - [ ] [session-objects.md](session-objects.md)'s checklist holds for every handler you added
-- [ ] `signals` is in `services` once, next to the agents
+- [ ] The agents are in `services`, and `src/app.ts` still connects `restate.served(services)`
 - [ ] The framework's packages are installed, and the model's API key is in the environment
       (and in the Modal secret, for a deployment)
 - [ ] Tools that change something outside are safe to repeat for their framework: the
