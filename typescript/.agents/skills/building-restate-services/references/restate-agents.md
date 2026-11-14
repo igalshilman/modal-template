@@ -53,11 +53,11 @@ const services = [notes, assistant];
 
 Each agent brings its **companion**, a virtual object of its own named
 `<agent>.prebuilt.restate` (`assistant.prebuilt.restate`), keyed as the agent, which keeps its
-waits and status. Never list it. **`restate.connect`**, what this repository commits, serves
-exactly the services it is given, so `src/app.ts` passes them through
-`restate.served(services)`, which adds each agent's companion, once: keep that call.
-`restate.serve(...services)` of `@restatedev/sessions` (and `serve` of `@restatedev/agents`,
-the same function) does it by itself.
+waits and status. Never list it. **`restate.connect`** of `@restatedev/sessions`, what this
+repository commits, adds each agent's companion itself, as `restate.serve(...services)` does
+(and as `connect` and `serve` of `@restatedev/agents`, the same functions, do). The Restate
+SDK's own `connect` does not: it serves exactly the services it is given, leaving the agents
+without their companions, so import it from `@restatedev/sessions` and not from the SDK.
 
 ## Choose a framework
 
@@ -296,7 +296,8 @@ message of the same kind.
 ## Before finishing (agents)
 
 - [ ] [session-objects.md](session-objects.md)'s checklist holds for every handler you added
-- [ ] The agents are in `services`, and `src/app.ts` still connects `restate.served(services)`
+- [ ] The agents are in `services`, and `src/app.ts` connects with `@restatedev/sessions`'
+      `restate.connect`, not the Restate SDK's
 - [ ] The framework's packages are installed, and the model's API key is in the environment
       (and in the Modal secret, for a deployment)
 - [ ] Tools that change something outside are safe to repeat for their framework: the

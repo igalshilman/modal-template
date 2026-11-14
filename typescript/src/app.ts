@@ -30,7 +30,8 @@ const services = [notes];
 // import { tutorial } from './tutorial/index.ts';
 // const services = [notes, ...tutorial];
 
-// `served` adds what the services need beside them (each agent's companion).
-restate.connect({ services: restate.served(services), name: 'notes-v1' });
+// `connect` adds what the services need beside them (each agent's companion),
+// as `serve` does. The Restate SDK's own `connect` does not: use this one.
+restate.connect({ services, name: 'notes-v1' });
 // To run locally, with a Restate server on this machine, use this instead:
 // await restate.serve(...services); // on PORT, 9080 by default

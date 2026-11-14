@@ -237,8 +237,9 @@ The library's scripted test models are not published, so test in layers:
 
 ## Deploying
 
-- Each agent's companion must be served with it: `src/app.ts` connects
-  `restate.served(services)`, which adds them.
+- Each agent's companion must be served with it, which `restate.connect` and
+  `restate.serve` of `@restatedev/sessions` both do. The Restate SDK's own `connect`
+  does not: `src/app.ts` imports it from `@restatedev/sessions`.
 - The model's API key, and any key a tool uses, go in the environment: on Modal, in the
   Modal secret (deploying-on-modal skill).
 - A long turn is fine: the app connects out to Restate Cloud, and a turn that waits (a

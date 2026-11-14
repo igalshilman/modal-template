@@ -60,8 +60,9 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run` (a session object ha
 ## Step 2: the repository
 
 - `src/app.ts` is the application: its services go in `services`, which
-  `restate.connect({ services: restate.served(services), name: 'notes-v1' })` connects to
-  Restate Cloud (`served` adds what they need beside them, such as each agent's companion). For a Restate
+  `restate.connect({ services, name: 'notes-v1' })` connects to
+  Restate Cloud (it adds what they need beside them, such as each agent's companion, as
+  `serve` does; the Restate SDK's own `connect` does not). For a Restate
   server on this machine, the commented `await restate.serve(...services)` line replaces it
   (on `PORT`, 9080 by default).
 - `restate.serve` of `@restatedev/sessions` takes the services as arguments,
