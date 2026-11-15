@@ -82,7 +82,9 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   agent), `models` (LangChain chat models of your own), `memory` (an agent with a table of
   its own), `support` (a service, a workflow and a signal as tools, and a steered message)
   and `refund_graph` (a LangGraph graph of your own whose nodes are Restate steps, and an
-  agent with `output=`). `uv run python -m restate serve examples.<name>:app`
+  agent with `output=`). `examples/factory/` is an advanced one, a package: webhooks from
+  Linear and GitHub into agents on two frameworks, MCP tools, subagents working at once, and
+  a planner whose answer is structured. `uv run python -m restate serve examples.<name>:app`
   serves one on this machine. Their extra dependencies are in the `examples` group of
   `pyproject.toml`, which Modal doesn't install.
 - From `python/`: check with `uv run ruff check && uv run ruff format --check && uv run pyright` (strict),

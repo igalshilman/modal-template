@@ -64,7 +64,8 @@ uv run ruff format                                  # format
   After changing dependencies, run `uv lock` and commit `uv.lock`.
 - Agents: the OpenAI Agents SDK is installed (`restate-sdk[serve,openai]`), and the app's
   assistant and the tutorial's agents (lessons 09–16) use it; LangGraph, LangChain (for
-  `create_agent`) and `langchain-openai` are in the `examples` group. Another framework in `app/` needs its extra
+  `create_agent`), `langchain-openai`, and the factory's Pydantic AI (with Anthropic) and MCP
+  are in the `examples` group. Another framework in `app/` needs its extra
   of `restate-sdk` (`[langgraph]`, `[pydantic-ai]`, `[adk]`) and its model provider's package
   in `[project] dependencies`.
 - Keys (`RESTATE_CONNECT_KEY`, model API keys) come from the environment, and on Modal from
