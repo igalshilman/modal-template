@@ -50,7 +50,7 @@ uv run ruff format                                  # format
 ## Conventions
 
 - Services go in `app = restate.app([...])` in `app/__main__.py`, the ASGI app. An agent
-  brings along what it needs (the `signals` object), served once. The file ends with `restate.serve(app)`; Restate Cloud and Modal connect the same
+  brings along what it needs (its companion, `<agent>.prebuilt.restate`). The file ends with `restate.serve(app)`; Restate Cloud and Modal connect the same
   `app` with `python -m restate connect app.__main__:app --name notes-python-v1`, and
   `modal/on_modal_push.py` serves it on Modal with `python -m restate serve app.__main__:app`,
   for Restate Cloud to call.
