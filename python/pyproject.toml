@@ -21,8 +21,10 @@ dev = [
 ]
 # What examples/ needs beside the app's dependencies; installed by `uv sync`, not on Modal.
 examples = [
-    "restate-sdk[langchain,langgraph]>=1.5.2",
+    "restate-sdk[langchain,langgraph,pydantic-ai]>=1.5.2",
     "langchain-openai>=1",
+    "pydantic-ai-slim[anthropic,openai]>=2.68",  # the factory's coders: Claude, or OpenAI's models with CODER_MODEL
+    "mcp>=2.3",  # the factory's tools of Linear and GitHub, from their MCP servers
 ]
 
 [tool.uv]

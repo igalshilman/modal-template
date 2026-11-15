@@ -194,8 +194,14 @@ npx @restatedev/restate deployments register --force --yes http://localhost:9080
 | [`support`](examples/support.py)                 | Restate as tools: a service, a person's approval (a signal), and a workflow; a message steered into the turn |
 | [`refund_graph`](examples/refund_graph.py)       | A LangGraph graph of your own whose steps are Restate's, and an agent that answers with data (`output=`)     |
 
-They need `OPENAI_API_KEY`. LangGraph, LangChain and `langchain-openai` are in the `examples`
-group of `pyproject.toml`, which `uv sync` installs and the Modal image doesn't. Any example
+**Advanced:** [`examples/factory`](examples/factory), a software factory. A new Linear issue,
+through a webhook, starts a triage agent, which has a planner plan it, a coder per part
+build it and open a pull request on GitHub, and a reviewer review each one, round by round.
+It runs on your Linear workspace and a GitHub repository: its README shows how to set it up.
+
+They need `OPENAI_API_KEY`. Their dependencies (LangGraph, LangChain, `langchain-openai`, and
+the factory's Pydantic AI and MCP) are in the `examples` group of `pyproject.toml`, which
+`uv sync` installs and the Modal image doesn't. Any example
 connects to Restate Cloud too:
 `uv run python -m restate connect examples.chat:app --name chat-python-v1`.
 
