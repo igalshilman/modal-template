@@ -119,7 +119,7 @@ const weather = tool({
 const assistant = pi.agent({ name: 'assistant', tools: [weather] });
 ```
 
-To serve agents, add them to `services` in [`src/app.ts`](src/app.ts): `restate.served` adds
+To serve agents, add them to `services` in [`src/app.ts`](src/app.ts): `restate.connect` adds
 each agent's companion, `<agent>.prebuilt.restate`, which keeps its waits and status.
 
 ## Session Objects
@@ -181,6 +181,10 @@ npm install @restatedev/agentlib @restatedev/restate-sdk @restatedev/restate-sdk
 
 Start from the [agentlib template](https://github.com/restatedev/agentlib-template) or the
 [numbered examples](https://github.com/restatedev/agentlib/blob/main/packages/examples/README.md).
+
+`@restatedev/agents/agentlib` runs an agentlib agent with the handlers, views, companion and
+tools of every agent of the [Agent SDK](#agent-sdk), still journaled: see
+[its README](https://github.com/restatedev/sdk-sessions/blob/main/packages/agents/src/agentlib/README.md).
 
 To build your own harness, [restatedev/agent](https://github.com/restatedev/agent) is an even
 more detailed reference: steerable, concurrent agents with approvals, sandboxed code,

@@ -18,12 +18,12 @@ Load the skill for the task before starting (they are in `.agents/skills/`, and 
 This repository has two kinds of Restate handlers, with contradicting rules:
 
 - **Session objects** (`restate.sessionObject` of `@restatedev/sessions`, and every agent of
-  `@restatedev/agents`) run again from their first line after a failure, against their SQL
-  database (`ctx.db`). No `ctx.run`, native `Promise.all` is fine, and every handler must be
-  safe to run twice.
-- **Journaled handlers** (`restate.service`, `restate.object`, `restate.workflow`) replay
-  their journal: side effects in `ctx.run`, `RestatePromise` combinators, deterministic
-  helpers.
+  `@restatedev/agents` but agentlib's) run again from their first line after a failure,
+  against their SQL database (`ctx.db`). No `ctx.run`, native `Promise.all` is fine, and
+  every handler must be safe to run twice.
+- **Journaled handlers** (`restate.service`, `restate.object`, `restate.workflow`, and an
+  agent of `@restatedev/agents/agentlib`) replay their journal: side effects in `ctx.run`,
+  `RestatePromise` combinators, deterministic helpers.
 
 Decide which kind a handler is before changing it, and follow only its rules
 (building-restate-services, step 1). Never suggest `ctx.run`, `ctx.sleep`, `ctx.get`/`ctx.set`
