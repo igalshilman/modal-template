@@ -79,6 +79,7 @@ curl localhost:8080/notes/alice/list
 
 # Restate Cloud: the same requests, at your ingress, with your ingress API key
 RESTATE_INGRESS_URL=https://201kab12cd34ef.env.eu.restate.cloud:8080   # placeholder: yours from the Cloud UI
+RESTATE_INGRESS_API_KEY=…   # the ingress key's API key, from the Cloud UI: not RESTATE_INGRESS_KEY, which a plain bearer refuses (401)
 curl "$RESTATE_INGRESS_URL/notes/alice/add" -H "Authorization: Bearer $RESTATE_INGRESS_API_KEY" --json '"Buy milk"'
 curl "$RESTATE_INGRESS_URL/notes/alice/list" -H "Authorization: Bearer $RESTATE_INGRESS_API_KEY"
 ```

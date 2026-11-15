@@ -9,7 +9,7 @@ README.md). Run the commands from typescript/, the project's directory:
     pip install modal python-dotenv && modal setup                          # once
     modal secret create restate-template --from-dotenv restate.env          # once
     modal deploy modal/on_modal.py                                          # the image builds on Modal, then the app runs
-    restate deployments register connect://notes-v1                         # once: tells Restate Cloud about the deployment
+    npx @restatedev/restate@1.8.1-hotfix.2 deployments register connect://notes-v1   # once (after `restate cloud login`)
 
 `modal app logs restate-template` follows the app; `modal app stop
 restate-template` stops it.
