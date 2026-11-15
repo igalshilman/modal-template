@@ -237,8 +237,9 @@ The library's scripted test models are not published, so test in layers:
 
 ## Deploying
 
-- Each agent's companion must be served with it: `src/app.ts` connects
-  `restate.served(services)`, which adds them.
+- Each agent's companion must be served with it: `restate.connect` of
+  `@restatedev/sessions`, which `src/app.ts` calls, adds them (the SDK's own `connect` does
+  not).
 - The model's API key, and any key a tool uses, go in the environment: on Modal, in the
   Modal secret (deploying-on-modal skill).
 - A long turn is fine: the app connects out to Restate Cloud, and a turn that waits (a
@@ -246,6 +247,5 @@ The library's scripted test models are not published, so test in layers:
   suspension restarts the handler.
 - Coding agents (`workspace`) run real commands in the container: the container is their
   sandbox, and their files live on its disk, not in Restate.
-- With `serve(...)` of `@restatedev/agents` (not used by this repository),
-  `RESTATE_SERVE_ONLY=triage,planner` serves only the services it names, each agent with its
-  companion, to deploy one program in parts.
+- `RESTATE_SERVE_ONLY=triage,planner` makes `restate.connect` (or `restate.serve`) serve only
+  the services it names, each agent with its companion, to deploy one program in parts.
