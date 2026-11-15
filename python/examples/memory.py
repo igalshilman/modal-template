@@ -15,7 +15,7 @@ say::
 
 import restate
 from restate import sessions
-from restate.agents import openai, tool
+from restate.agents import AgentContext, AgentViewContext, openai, tool
 
 
 async def facts_of(db: sessions.DatabaseReader) -> list[str]:
@@ -46,13 +46,13 @@ memory = openai.agent(
 
 
 @memory.handler
-async def forget(ctx: sessions.SessionContext, fact: str) -> None:
+async def forget(ctx: AgentContext, fact: str) -> None:
     """Forget a fact. A handler of your own, beside the agent's ``chat``."""
     await ctx.db.execute("DELETE FROM facts WHERE fact = ?", [fact])
 
 
 @memory.view
-async def facts(ctx: sessions.ViewContext) -> list[str]:
+async def facts(ctx: AgentViewContext) -> list[str]:
     """What the assistant knows about the user. A view, so it answers even while the agent is busy."""
     return await facts_of(ctx.db)
 

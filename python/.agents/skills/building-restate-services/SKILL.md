@@ -29,7 +29,7 @@ only. For session objects and agents, this skill's rules take precedence: never 
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | Defined with                         | `sessions.SessionObject(...)` of `restate.sessions`; `openai.agent(...)`, `langgraph.agent(...)`, `pydantic_ai.agent(...)`, `adk.agent(...)`, `AgentObject(...)` of `restate.agents` | `restate.Service(...)`, `restate.VirtualObject(...)`, `restate.Workflow(...)`                 |
 | Handlers                             | `@obj.handler` (one at a time per key, writes) and `@obj.view` (beside them, reads)                                                                     | `@svc.handler()`, `@wf.main()`                                                                |
-| Context                              | `sessions.SessionContext`, `sessions.ViewContext`                                                                                                       | `restate.Context`, `restate.ObjectContext`, `restate.WorkflowContext`, ...                     |
+| Context                              | `sessions.SessionContext`, `sessions.ViewContext`; an agent's own handlers and views: `AgentContext`, `AgentViewContext`                                  | `restate.Context`, `restate.ObjectContext`, `restate.WorkflowContext`, ...                     |
 | After a failure                      | Runs again **from its first line**, against its database. No journal replay                                                                              | **Replays its journal**: completed steps return their recorded results                         |
 | State                                | `ctx.db`: a SQL database per key                                                                                                                         | `ctx.get` / `ctx.set` key/value state                                                          |
 | Side effects                         | Directly; make them safe to run twice (stable ids such as `ctx.request.id`, idempotency keys)                                                            | Inside `ctx.run_typed(...)`                                                                    |
@@ -66,8 +66,8 @@ Never carry a rule across: don't wrap `ctx.db` in `ctx.run_typed` (a session obj
   `modal/on_modal_push.py` runs `python -m restate serve app.__main__:app` instead, for
   Restate Cloud to call). Don't add a `connect` call or a switch to the file.
 - `restate.app([...])` serves everything: services, virtual objects, workflows, session
-  objects and agents. An agent brings along what it needs (the `signals` object its tools
-  wait on), served once however many agents there are. Anything with a
+  objects and agents. An agent brings along what it needs: its companion,
+  `<agent>.prebuilt.restate`, which keeps its tools' waits and its status. Anything with a
   `__restate_services__()` method (`restate.Servable`) can be listed, such as a group of
   services.
 - `tutorial/`: the tutorial, one idea per lesson, for reading and copying into

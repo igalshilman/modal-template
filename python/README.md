@@ -145,7 +145,7 @@ assistant = openai.agent("assistant", system="Answer briefly.", tools=[get_weath
 ```
 
 To serve agents, add them to `restate.app([...])` in [`app/__main__.py`](app/__main__.py).
-Each brings along what it needs (the `signals` object its waits use). Put your model's API key
+Each brings along its companion, `<agent>.prebuilt.restate`, which keeps its waits and status. Put your model's API key
 (`OPENAI_API_KEY`) in the environment, and on Modal in its secret. Chat with
 `curl localhost:8080/assistant/alice/chat -d 'Hi'`, or from a terminal with
 `uv run python -m restate.agents chat assistant/alice`. The chat client shows each tool call
