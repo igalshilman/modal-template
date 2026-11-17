@@ -150,6 +150,11 @@ async def balance(ctx: sessions.ViewContext) -> int:
 - Handlers run one at a time per key; a view runs at once, reads what was committed when it
   started, can't write or send, and may call.
 - `ctx.key`, `ctx.request.id` (stable across attempts), `ctx.cancel(invocation_id)`.
+- A cancellation reaches the handler once, as `TerminalError("cancelled", 409)`: its
+  pending awaits raise it (its next await or `ctx.db` call, if none is pending). Its commits
+  stay. A `ctx.db` call already under way runs to its end; one that raises it did nothing, so
+  a `transaction()` that raised it didn't commit or send. Catch it to compensate, then
+  re-raise.
 - `ctx.call(handler, arg, key=, idempotency_key=)` is typed by the handler function and is
   made right away, awaited or not. A call that changes something needs an idempotency key
   that is the same on every attempt (`f"{ctx.request.id}:claim"`). `ctx.send(..., delay=)`
