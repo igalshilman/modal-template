@@ -159,6 +159,11 @@ async def balance(ctx: sessions.ViewContext) -> int:
   made right away, awaited or not. A call that changes something needs an idempotency key
   that is the same on every attempt (`f"{ctx.request.id}:claim"`). `ctx.send(..., delay=)`
   is one-way; `tx.send` goes out with its transaction's commit.
+- Restate shuts an attempt down after its inactivity timeout (a minute) without a message from
+  it. Work of your own that may take longer (a slow request, a command) runs in
+  `async with ctx.working():`, which keeps the attempt alive; a model's request in an agent
+  does already, and a tool of your own needs `@tool(keepalive=True)`. Keep long waits on
+  Restate (a call, a signal) out of it. The database's own calls keep the attempt alive.
 - Two session objects that call each other and wait can deadlock (each runs one request at a
   time per key): send instead.
 - Handler inputs and outputs are JSON; Pydantic models work as both.

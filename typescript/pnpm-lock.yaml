@@ -18,11 +18,11 @@ importers:
         specifier: 1.5.2
         version: 1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7)
       '@restatedev/agents':
-        specifier: 0.10.3
-        version: 0.10.3(@earendil-works/chord@1.5.2)(@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@earendil-works/pi-durable@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@restatedev/sessions@0.10.3)(zod@4.6.7)
+        specifier: 0.11.2
+        version: 0.11.2(@earendil-works/chord@1.5.2)(@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@earendil-works/pi-durable@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@restatedev/sessions@0.11.2)(zod@4.6.7)
       '@restatedev/sessions':
-        specifier: 0.10.3
-        version: 0.10.3
+        specifier: 0.11.2
+        version: 0.11.2
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -487,8 +487,8 @@ packages:
   '@protobufjs/utf8@1.1.2':
     resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
 
-  '@restatedev/agents@0.10.3':
-    resolution: {integrity: sha512-ncEWHdikkM9FIP60xZjO8oelBA0bpI9zpuqPbekpm7DDKaixWgVI+2HAdAI9/1JQa9wM6kvq3kku+yknvhCafw==}
+  '@restatedev/agents@0.11.2':
+    resolution: {integrity: sha512-tSTkMtQQ5djaBH5zYMLnOpomj2pq9ucRxsDulEAWO2fcQqW+T9Gd7djQpiavFdUVdfHjTqtuUU6f4KKPqOQgoQ==}
     engines: {node: '>=24'}
     peerDependencies:
       '@ai-sdk/anthropic': ^4.0.14
@@ -527,7 +527,7 @@ packages:
       '@opencode/server': 2.2.7
       '@restatedev/agentlib': ~0.2.0
       '@restatedev/restate-sdk-gen': 1.18.2
-      '@restatedev/sessions': ^0.10.3
+      '@restatedev/sessions': ^0.11.2
       effect: 4.1.0
       zod: ^4.6.7
     peerDependenciesMeta:
@@ -615,25 +615,25 @@ packages:
   '@restatedev/restate-sdk@1.18.2':
     resolution: {integrity: sha512-u5JO144+6aSWJ5ApYt0UfB3gLOFB/T94b6CQd1gIZ05FXyn3PLqQESo78c4flaPhEQsWjc9aFO71KMtimI1H4w==}
 
-  '@restatedev/sessions-darwin-arm64@0.10.3':
-    resolution: {integrity: sha512-EJDrwZ52uN376jM3Fii4zFka2QfQ21RNJz/bSXAv0CRuMvKIrKZNfhZexdvlw1I/WCPddJlRdClFRlYODFzXoA==}
+  '@restatedev/sessions-darwin-arm64@0.11.2':
+    resolution: {integrity: sha512-rdAaltkBd4gcDUk/hdY7TIWzBOd5ajsMKRDlr+HxBc9XcqNr36gMcA7KpiJBbUQVVRx0UgZgNeqpGHXn1+M3lA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@restatedev/sessions-linux-arm64-gnu@0.10.3':
-    resolution: {integrity: sha512-81nXQNSELcHRDvf1oVqwG7HPwwQBOEZDWyL8pxP7cd+2diCNhwgtw+VlLOPMOd9hfyPhfkWlUVT8nMjcQD5BBg==}
+  '@restatedev/sessions-linux-arm64-gnu@0.11.2':
+    resolution: {integrity: sha512-Np5A/d1RM1k4p3q5DNtY55PMHZpFSqbbcneCBjxZH9MfmzTrdt4yNikeJtaeQ/zklJ6i4BWIPcGlK3z9NXmoBg==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@restatedev/sessions-linux-x64-gnu@0.10.3':
-    resolution: {integrity: sha512-IVeXO4/nhbG8IylS8MR50ABSHxcWaW3wgpwBgjPmm3b9ctrq+6+aay7tkzvVq6YOjtEPxu3Bp6QJaepGWzO8Nw==}
+  '@restatedev/sessions-linux-x64-gnu@0.11.2':
+    resolution: {integrity: sha512-ygbZo74nVPTJjCfNANdOkCPtPGRY9vPOQommrCURP4vD5fBONp/CYVcmLhrd8eL6+OAzwNzAa8h4qPX8TFxIQg==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@restatedev/sessions@0.10.3':
-    resolution: {integrity: sha512-H+NAYC5DpVSHKGqJOicIp/PL1UQ1mz33Zh1spdI9BVZOgRER2vgaYyDjspLnJzbT+9VAIWge7lioAzhlLU1UOQ==}
+  '@restatedev/sessions@0.11.2':
+    resolution: {integrity: sha512-mn88LgTqNIUSWm1fjZ8v1vN/WHYsqHNwU1GiNF+qTRlLkRljfz+bo+D4isErQFW0O08Zpg0j+XHV4FtYKeiIEw==}
     engines: {node: '>=24'}
 
   '@silvia-odwyer/photon@0.3.3':
@@ -1451,11 +1451,11 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@restatedev/agents@0.10.3(@earendil-works/chord@1.5.2)(@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@earendil-works/pi-durable@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@restatedev/sessions@0.10.3)(zod@4.6.7)':
+  '@restatedev/agents@0.11.2(@earendil-works/chord@1.5.2)(@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@earendil-works/pi-durable@1.5.2(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(zod@4.6.7))(@restatedev/sessions@0.11.2)(zod@4.6.7)':
     dependencies:
       '@restatedev/restate-sdk-clients': 1.18.2
       '@restatedev/restate-sdk-core': 1.18.2
-      '@restatedev/sessions': 0.10.3
+      '@restatedev/sessions': 0.11.2
       '@standard-schema/spec': 1.1.0
       zod: 4.6.7
     optionalDependencies:
@@ -1473,23 +1473,23 @@ snapshots:
     dependencies:
       '@restatedev/restate-sdk-core': 1.18.2
 
-  '@restatedev/sessions-darwin-arm64@0.10.3':
+  '@restatedev/sessions-darwin-arm64@0.11.2':
     optional: true
 
-  '@restatedev/sessions-linux-arm64-gnu@0.10.3':
+  '@restatedev/sessions-linux-arm64-gnu@0.11.2':
     optional: true
 
-  '@restatedev/sessions-linux-x64-gnu@0.10.3':
+  '@restatedev/sessions-linux-x64-gnu@0.11.2':
     optional: true
 
-  '@restatedev/sessions@0.10.3':
+  '@restatedev/sessions@0.11.2':
     dependencies:
       '@restatedev/restate-sdk': 1.18.2
       '@restatedev/restate-sdk-core': 1.18.2
     optionalDependencies:
-      '@restatedev/sessions-darwin-arm64': 0.10.3
-      '@restatedev/sessions-linux-arm64-gnu': 0.10.3
-      '@restatedev/sessions-linux-x64-gnu': 0.10.3
+      '@restatedev/sessions-darwin-arm64': 0.11.2
+      '@restatedev/sessions-linux-arm64-gnu': 0.11.2
+      '@restatedev/sessions-linux-x64-gnu': 0.11.2
 
   '@silvia-odwyer/photon@0.3.3': {}
 

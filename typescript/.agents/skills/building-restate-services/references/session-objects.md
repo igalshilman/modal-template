@@ -244,9 +244,16 @@ const notes = restate.sessionObject({
 | `ctx.db`                 | `Database`: reads, writes, transactions | `DatabaseReader`: reads only |
 | `ctx.rpc`, `ctx.cancel`  | Yes                                     | Yes                          |
 | `ctx.send`               | Yes                                     | No                           |
+| `ctx.working(fn)`        | Yes                                     | No                           |
 
 `ctx.request.id` is the same on every attempt of an invocation. There is no `run`, `sleep`,
 `rand`, `date`, awakeable, promise, or key/value state.
+
+Restate shuts an attempt down after its inactivity timeout (a minute) without a message from
+it. Work of the handler's own that may take longer (a slow request, a command) runs in
+`await ctx.working(() => ...)`, which keeps the attempt alive; a model's request in an agent
+does already, and a tool of your own needs `keepalive: true`. Keep long waits on Restate (a
+call, a signal) out of it. The database's own calls keep the attempt alive.
 
 ### Views
 
